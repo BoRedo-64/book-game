@@ -10,6 +10,7 @@ import {
 import { db } from './db.js';
 import { prefs } from './audio.js';
 
+const RAID_IMG = 'assets/monsters/dark-3.webp';
 export const COIN = '<img class="ico" src="assets/coin.webp" alt="coins">';
 export const ENERGY = '<img class="ico" src="assets/energy.webp" alt="energy">';
 export const h = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -144,7 +145,7 @@ function homeView() {
           : `<span class="reward">${q.reward} ${COIN}</span>`}
       </div>`).join('')}</section>
     <button class="card raidmini" data-a="go" data-tab="arena" data-sub="raid">
-      <img class="shadowbeast" src="${monsterImg(r.element, 3)}" alt="">
+      <img class="shadowbeast" src="${RAID_IMG}" alt="">
       <span><small>WEEKLY RAID</small><b>${h(r.name)}</b>${bar(r.left, r.hp, 'hp')}
       <small>${r.dead ? 'Defeated! Claim your reward.' : `${fmt(r.left)} HP left · ${plural(r.daysLeft, 'day')}`}</small></span>
     </button>`;
@@ -259,7 +260,7 @@ function raidTab() {
   const r = raid();
   return `<section class="card raid ${r.dead ? 'dead' : ''}">
       <small>WEEKLY RAID · ${r.dead ? 'DEFEATED' : `${plural(r.daysLeft, 'day')} left`}</small>
-      <img class="shadowbeast big" src="${monsterImg(r.element, 3)}" alt="">
+      <img class="shadowbeast big" src="${RAID_IMG}" alt="">
       <h2>${h(r.name)}</h2><p class="muted">${h(r.line)}</p>
       ${bar(r.left, r.hp, 'hp')}<p><b>${fmt(r.left)}</b> / ${fmt(r.hp)} HP</p>
       ${r.dead ? (r.claimed ? '<p class="tick">Reward claimed ✓</p>'

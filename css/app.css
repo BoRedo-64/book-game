@@ -174,7 +174,7 @@ label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px
 .tick { color: var(--good); font-weight: 800; }
 .raidmini { display: flex; gap: 14px; align-items: center; background: linear-gradient(120deg, #3a1553, #1f1247); }
 .raidmini span { flex: 1; display: grid; } .raidmini b { font: 600 17px var(--display); }
-.shadowbeast { width: 68px; height: 68px; object-fit: contain; filter: brightness(.28) sepia(1) hue-rotate(230deg) saturate(5) drop-shadow(0 0 10px #b04dff); }
+.shadowbeast { width: 68px; height: 68px; object-fit: contain; filter: drop-shadow(0 0 10px #b04dff) drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); }
 .shadowbeast.big { width: 190px; height: 190px; margin: 6px auto; animation: bob 3s ease-in-out infinite; }
 
 /* ---------- library ---------- */
