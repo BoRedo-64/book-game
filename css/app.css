@@ -461,7 +461,7 @@ body.splashing { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .fcard-mon img { animation: none; } }
 
 /* ---------- fusion ---------- */
-.ghost { filter: brightness(0) drop-shadow(0 0 6px rgba(205, 213, 255, .35)); opacity: .7; }
+.silhouette { filter: brightness(0) drop-shadow(0 0 6px rgba(205, 213, 255, .35)); opacity: .7; }
 .fusion { background: linear-gradient(160deg, color-mix(in srgb, var(--el) 22%, var(--card)), var(--card)); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; text-align: center; }
 .fusion.ready { border-color: var(--gold); box-shadow: 0 0 22px rgba(255, 201, 60, .25); }
 .fusion p { font-size: 13.5px; }

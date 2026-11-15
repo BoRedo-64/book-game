@@ -308,13 +308,15 @@ const A = {
       const f = S.people[d.id];
       foe = G.fighter(monsterOf(f)); owner = f.username;
     } else {
-      const el = G.STARTERS[Math.floor(Math.random() * G.STARTERS.length)];
+      // Hybrids are rare: each has a 1% chance to show up instead of a normal wild monster.
+      const rare = Object.keys(G.ELEMENTS).filter((k) => !G.STARTERS.includes(k)).find(() => Math.random() < G.RARE_WILD_CHANCE);
+      const el = rare || G.STARTERS[Math.floor(Math.random() * G.STARTERS.length)];
       const xp = G.xpForLevel(Math.max(1, me.level + Math.floor(Math.random() * 4) - 2));
-      foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp });
+      foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp, ...(rare ? { rare: true } : {}) });
     }
     await saveMe({ energy: S.me.energy - 1 });
     S.sheet = null;
-    S.battle = { me, foe, owner, defender: d.id || null, log: `${owner ? `${owner}’s ${foe.name}` : foe.name} is ready to fight!`, busy: false, over: null, anim: {}, pop: {} };
+    S.battle = { me, foe, owner, defender: d.id || null, log: foe.rare ? `${G.ELEMENTS[foe.element].emoji} A rare ${foe.name} appeared! Only 1 in 100 wild battles…` : `${owner ? `${owner}’s ${foe.name}` : foe.name} is ready to fight!`, busy: false, over: null, anim: {}, pop: {} };
     render();
   },
   async move(d) {

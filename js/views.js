@@ -369,12 +369,12 @@ function fusionCard(k) {
   const parent = (p) => {
     const m = bestOf(p), lv = m ? levelInfo(m.xp).level : 0, done = m && levelInfo(m.xp).stage >= 3;
     return `<div class="fz-parent el-${p} ${done ? 'done' : ''}">
-      <span class="fz-orb">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="" class="ghost">`}</span>
+      <span class="fz-orb">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="" class="silhouette">`}</span>
       <small>${m ? (done ? '✓ Ready' : `Lv ${lv} / ${EVOLVE_2}`) : `Need ${ELEMENTS[p].name}`}</small>${m && !done ? bar(lv, EVOLVE_2) : ''}</div>`;
   };
   return `<section class="fusion el-${k} ${ready ? 'ready' : ''} ${owned ? 'owned' : ''}">
     <div class="fz-row">${parent(e.parents[0])}<span class="fz-plus">+</span>${parent(e.parents[1])}<span class="fz-plus">=</span>
-      <div class="fz-child"><span class="fz-orb"><img src="${monsterImg(k, 0)}" alt="" class="${owned || ready ? '' : 'ghost'}"></span>
+      <div class="fz-child"><span class="fz-orb"><img src="${monsterImg(k, 0)}" alt="" class="${owned || ready ? '' : 'silhouette'}"></span>
         <small>${owned || ready ? `${e.emoji} ${e.name}` : '???'}</small></div></div>
     <p class="muted">${owned ? `You bred a ${e.name}! Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} stay on your team.`
       : `Raise ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} to their final form (Lv ${EVOLVE_2}) to breed a ${ready ? e.name : 'mystery'} egg. You keep both parents.`}</p>
@@ -525,7 +525,7 @@ const SHOP = [
       .concat(HYBRIDS.filter((k) => !S.monsters.some((m) => m.element === k)).map((k) => {
         const e = ELEMENTS[k], ready = fusable(S.monsters).includes(k);
         return { name: ready ? `${e.name} egg` : 'Mystery egg', desc: `Can't be bought. Breed it from ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')} at Lv ${EVOLVE_2}.`,
-          art: `<img src="${monsterImg(k, 0)}" alt="" class="${ready ? '' : 'ghost'}">`, artCls: `el-${k}`,
+          art: `<img src="${monsterImg(k, 0)}" alt="" class="${ready ? '' : 'silhouette'}">`, artCls: `el-${k}`,
           action: 'sheet', attrs: `data-s="fuse" data-el="${k}"`, status: ready ? 'fuse' : 'locked' };
       })),
   },
