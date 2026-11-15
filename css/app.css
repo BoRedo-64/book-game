@@ -333,4 +333,5 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
   *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition-duration: .01s !important; }
 }
 @media (min-width: 441px) { #app { box-shadow: 0 0 60px rgba(0, 0, 0, .5); } }
-.coin { height: 1.15em; width: 1.15em; vertical-align: -.22em; display: inline-block; object-fit: contain; }
+.ico { height: 1.15em; width: 1.15em; vertical-align: -.22em; display: inline-block; object-fit: contain; }
+.stat .ico { height: 1.6em; width: 1.6em; margin: -4px -1px; }

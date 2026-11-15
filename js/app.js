@@ -1,6 +1,6 @@
 // Boot, event wiring and every action the player can take.
 import { S, active, person, monsterOf, loadAll, daily, quests, raid, duelView, today } from './state.js';
-import { view, h, COIN } from './views.js';
+import { view, h, COIN, ENERGY } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
 
@@ -84,7 +84,7 @@ async function logReading(book, page) {
 
   S.sheet = finished ? { s: 'book', id: book.id } : null;
   render();
-  toast(`+${xp} XP · +${coins} ${COIN}${gainedEnergy ? ` · +${gainedEnergy} ⚡` : ''}`);
+  toast(`+${xp} XP · +${coins} ${COIN}${gainedEnergy ? ` · +${gainedEnergy} ${ENERGY}` : ''}`);
 }
 
 function updateGain() {
@@ -281,7 +281,7 @@ const A = {
   async fight(d) {
     const me = G.fighter(active());
     if (!me.level) return toast('Hatch your egg first!');
-    if (S.me.energy < 1) return toast(`Out of energy. Read ${G.PAGES_PER_ENERGY} pages to charge ⚡`);
+    if (S.me.energy < 1) return toast(`Out of energy. Read ${G.PAGES_PER_ENERGY} pages to charge ${ENERGY}`);
     let foe, owner = null;
     if (d.id) {
       const f = S.people[d.id];

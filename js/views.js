@@ -9,7 +9,8 @@ import {
 } from './game.js';
 import { db } from './db.js';
 
-export const COIN = '<img class="coin" src="assets/coin.webp" alt="coins">';
+export const COIN = '<img class="ico" src="assets/coin.webp" alt="coins">';
+export const ENERGY = '<img class="ico" src="assets/energy.webp" alt="energy">';
 export const h = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => Number(n).toLocaleString();
 const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
@@ -92,7 +93,7 @@ function topbar() {
   const st = streak(), lit = S.me.last_read === today();
   return `<header class="topbar">
     <span class="stat ${lit ? 'lit' : ''}" title="Day streak">🔥 <b>${st}</b></span>
-    <span class="stat" title="Battle energy">⚡ <b>${S.me.energy}</b><small>/${MAX_ENERGY}</small></span>
+    <span class="stat" title="Battle energy">${ENERGY} <b>${S.me.energy}</b><small>/${MAX_ENERGY}</small></span>
     <button class="stat" data-a="sheet" data-s="shop" title="Coins">${COIN} <b>${fmt(S.me.coins)}</b></button>
   </header>`;
 }
@@ -182,10 +183,10 @@ function battleTab() {
       <div><h3>${h(mon.name)} <small>Lv ${me.level}</small></h3>
         <p class="muted">${egg ? 'Eggs can’t fight. Hatch it first!' : `❤️ ${me.maxHp} HP · ⚔️ ${me.atk} ATK`}</p>
         <p>${lg.icon} ${lg.name} league · ${fmt(S.me.trophies)} trophies</p>
-        <div class="pips" aria-label="${S.me.energy} of ${MAX_ENERGY} energy">⚡ ${pips}</div>
+        <div class="pips" aria-label="${S.me.energy} of ${MAX_ENERGY} energy">${ENERGY} ${pips}</div>
       </div>
     </section>
-    <p class="hint">Every ${PAGES_PER_ENERGY} pages you read charges 1 ⚡. A battle costs 1 ⚡.</p>
+    <p class="hint">Every ${PAGES_PER_ENERGY} pages you read charges 1 ${ENERGY}. A battle costs 1 ${ENERGY}.</p>
     <h3 class="h">Opponents</h3>
     <section class="card list">
       <div class="row"><span class="avatar wild">🌀</span>
@@ -455,7 +456,7 @@ function shopSheet() {
   return `<h2>Shop</h2><p class="wallet">${COIN} ${fmt(S.me.coins)}</p>
     <section class="list">
       ${item('<span class="avatar wild">❄️</span>', 'Streak freeze', `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, 60, 'buy', 'data-item="freeze"', S.me.freezes >= 2, S.me.freezes >= 2 ? 'Full' : '')}
-      ${item('<span class="avatar wild">⚡</span>', 'Energy drink', 'Refills battle energy to full.', 40, 'buy', 'data-item="energy"', S.me.energy >= MAX_ENERGY, S.me.energy >= MAX_ENERGY ? 'Full' : '')}
+      ${item('<span class="avatar wild"><img src="assets/energy.webp" alt=""></span>', 'Energy drink', 'Refills battle energy to full.', 40, 'buy', 'data-item="energy"', S.me.energy >= MAX_ENERGY, S.me.energy >= MAX_ENERGY ? 'Full' : '')}
       ${eggs.map((e) => item(`<span class="avatar el-${e}"><img src="${monsterImg(e, 0)}" alt=""></span>`, `${ELEMENTS[e].name} egg`, 'Raise a second monster. Switch any time.', 300, 'sheet', `data-s="egg" data-el="${e}"`)).join('')}
     </section>
     <h3 class="h">Habitats</h3>
