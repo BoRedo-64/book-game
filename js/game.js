@@ -90,7 +90,7 @@ export const streakBonus = (streak) => (streak >= 30 ? 1.2 : streak >= 7 ? 1.1 :
 export function fighter(mon, extra = {}) {
   const { level, stage } = levelInfo(mon.xp);
   const hp = 50 + level * 14;
-  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: 8 + level * 3, cd: 0, guard: false, burn: null, ...extra };
+  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: 8 + level * 3, cd: 0, guard: false, guardRun: 0, burn: null, ...extra };
 }
 
 export function elementMult(a, b) {
@@ -120,6 +120,9 @@ export function perkText(el) {
   return '';
 }
 
+/** Heal multiplier for a's next Guard: 1, then ½, ¼… for each Guard in a row. */
+export const guardFactor = (a) => 0.5 ** (a.guardRun || 0);
+
 /** Burn damage at the start of a's turn. Returns the damage dealt (0 if not burning). */
 export function burnTick(a) {
   if (!a.burn) return 0;
@@ -133,10 +136,14 @@ export function applyMove(a, b, move) {
   a.guard = false;
   if (a.cd > 0) a.cd--;
   if (move === 'guard') {
-    const heal = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * guardHeal(a.element)));
+    // Each Guard in a row heals half as much as the last, so guarding forever can't stall a fight.
+    const tired = guardFactor(a);
+    a.guardRun = (a.guardRun || 0) + 1;
+    const heal = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * guardHeal(a.element) * tired));
     a.hp += heal; a.guard = true;
-    return { move, heal, dmg: 0, text: `${a.name} braces and recovers ${heal} HP.` };
+    return { move, heal, dmg: 0, text: `${a.name} braces and recovers ${heal} HP.${tired < 1 ? ' (tiring…)' : ''}` };
   }
+  a.guardRun = 0;
   let dmg = a.atk * (0.85 + Math.random() * 0.3);
   let mult = 1;
   if (move === 'blast') { mult = elementMult(a.element, b.element); dmg *= 1.6 * mult; a.cd = blastCooldown(a.element); }

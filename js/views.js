@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -558,6 +558,7 @@ function battleView(b) {
     const label = k === 'blast' ? ELEMENTS[b.me.element].blast : m.name;
     const p = ELEMENTS[b.me.element].perk;
     const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : m.desc)
+      : k === 'guard' && b.me.guardRun ? `Heal ${Math.round(guardFactor(b.me) * 100)}% (tired)`
       : k === 'guard' && p.healMult ? 'Block + big heal' : m.desc;
     return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;
   }).join('');
