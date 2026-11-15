@@ -3,13 +3,14 @@ import { S, active, person, monsterOf, loadAll, daily, quests, raid, duelView, t
 import { view, h, COIN, ENERGY } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
+import * as Audio from './audio.js';
 
 const root = document.getElementById('app');
 const toastEl = document.getElementById('toast');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const val = (id) => document.getElementById(id)?.value.trim() ?? '';
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-let lastLoad = 0, toastTimer;
+let lastLoad = 0, toastTimer, lastParty = null;
 
 function render() {
   const hadSheet = !!root.querySelector('.sheet'), sheetScroll = root.querySelector('.sheet')?.scrollTop;
@@ -20,6 +21,14 @@ function render() {
     sheet.scrollTop = sheetScroll;
   }
   document.body.classList.toggle('locked', !!(S.sheet || S.battle || S.party.length));
+  sounds();
+}
+
+function sounds() {
+  Audio.music(!S.ready ? null : S.battle ? 'battle' : 'home');
+  const p = !S.battle && S.party[0];
+  if (p && p !== lastParty) Audio.sfx({ hatch: 'evolve', evolve: 'evolve', level: 'level' }[p.type]);
+  lastParty = p || null;
 }
 
 function toast(html) {
@@ -271,6 +280,7 @@ const A = {
   },
   async setHabitat(d) { await saveMe({ habitat: d.id }); render(); },
   async setGoal(d) { await saveMe({ daily_goal: +d.n }); render(); },
+  sound(d) { Audio.setPref(d.k, d.on === '1'); render(); },
   async logout() {
     await db.logout();
     Object.assign(S, { me: null, monsters: [], books: [], logs: [], friends: [], events: [], duels: [], battles: [], sheet: null, tab: 'home', auth: { mode: 'login', error: '' } });

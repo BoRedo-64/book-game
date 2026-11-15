@@ -8,6 +8,7 @@ import {
   HABITATS, DUEL_TYPES, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
+import { prefs } from './audio.js';
 
 export const COIN = '<img class="ico" src="assets/coin.webp" alt="coins">';
 export const ENERGY = '<img class="ico" src="assets/energy.webp" alt="energy">';
@@ -479,6 +480,8 @@ function settingsSheet(s) {
   return `<h2>Settings</h2>
     <label>Daily page goal</label>
     <div class="chips">${[10, 20, 30, 50, 75].map((n) => `<button class="${S.me.daily_goal === n ? 'on' : ''}" data-a="setGoal" data-n="${n}">${n}</button>`).join('')}</div>
+    ${['music', 'sfx'].map((k) => `<label>${k === 'music' ? 'Music' : 'Sound effects'}</label>
+    <div class="chips">${[['1', 'On'], ['0', 'Off']].map(([v, n]) => `<button class="${prefs[k] === (v === '1') ? 'on' : ''}" data-a="sound" data-k="${k}" data-on="${v}">${n}</button>`).join('')}</div>`).join('')}
     <form data-form="rename" class="stack"><label for="rn">Rename ${h(mon.name)}</label>
       <div class="addfriend"><input id="rn" value="${h(mon.name)}" maxlength="20" required><button class="btn primary">Save</button></div></form>
     <p class="hint">${db.online ? `Signed in as <b>${h(S.me.username)}</b>.` : 'Demo mode: progress is saved on this device only.'}</p>
