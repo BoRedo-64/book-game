@@ -91,6 +91,8 @@ export function setPref(kind, on) {
 // Unlock on the first user gesture, then preload the rest quietly.
 function unlock() {
   if (!ctx) return;
+  // iOS only unlocks if a sound starts inside the tap itself: play one silent sample.
+  try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); } catch { /* ignore */ }
   ctx.resume().then(() => {
     if (ctx.state !== 'running') return;
     unlocked = true;
@@ -105,4 +107,11 @@ function unlock() {
 document.addEventListener('visibilitychange', () => {
   if (!ctx || !unlocked) return;
   if (document.hidden) ctx.suspend(); else ctx.resume();
+});
+// iOS can 'interrupt' the audio (calls, Siri, lock screen); pick it back up on the next tap.
+ctx?.addEventListener?.('statechange', () => {
+  if (unlocked && ctx.state !== 'running' && !document.hidden) {
+    unlocked = false;
+    ['pointerdown', 'touchend', 'click', 'keydown'].forEach((t) => document.addEventListener(t, unlock, true));
+  }
 });
