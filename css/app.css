@@ -284,6 +284,7 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
 /* ---------- battle ---------- */
 .battle { position: fixed; inset: 0; z-index: 40; max-width: 440px; margin: 0 auto; display: grid; grid-template-rows: 1fr 1fr auto auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
   background: radial-gradient(90% 40% at 50% 62%, color-mix(in srgb, var(--el) 35%, transparent), transparent 70%), linear-gradient(180deg, #231a55, #120c2b); animation: fade .25s; }
+.battle.still { animation: none; }
 .b-flee { position: absolute; top: calc(14px + env(safe-area-inset-top)); left: 14px; z-index: 2; color: var(--muted); font-size: 13px; padding: 6px 10px; }
 .b-side { display: flex; align-items: center; gap: 8px; min-height: 0; }
 .b-side.foe { flex-direction: row; justify-content: flex-end; padding-top: 22px; } .b-side.me { flex-direction: row-reverse; justify-content: flex-end; }

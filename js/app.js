@@ -15,7 +15,9 @@ let lastLoad = 0, toastTimer, lastParty = null;
 
 function render() {
   const hadSheet = !!root.querySelector('.sheet'), sheetScroll = root.querySelector('.sheet')?.scrollTop;
+  const hadBattle = !!root.querySelector('.battle');
   root.innerHTML = view();
+  if (hadBattle) root.querySelector('.battle')?.classList.add('still'); // only fade in when the fight starts, not on every move
   const sheet = root.querySelector('.sheet');
   if (sheet && hadSheet) { // same sheet re-rendered: skip the slide-in and keep its scroll position
     sheet.classList.add('still'); root.querySelector('.scrim').classList.add('still');
