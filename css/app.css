@@ -402,3 +402,58 @@ body.splashing { overflow: hidden; }
 .perk { color: var(--el-soft); font-size: 13px; }
 .burnbadge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: rgba(255, 122, 47, .22); color: #ffb37a; font-size: 12px; font-weight: 800; animation: pop .3s; }
 .pop.burn { color: #ffb37a; text-shadow: 0 2px 0 #8a2a00, 0 0 12px #ff7a2f; }
+
+/* ---------- arena fighter card (game-style framed card) ---------- */
+.fcard { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--el) 45%, transparent)) drop-shadow(0 6px 10px rgba(0, 0, 0, .5)); }
+.fcard-frame, .fcard-in { clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); }
+.fcard-frame { --cut: 16px; padding: 3px; background: linear-gradient(135deg, #ffd27a, #c97a1f 30%, #ffe2a0 50%, #a35a12 75%, #ffcf70); }
+.fcard-in {
+  position: relative; display: grid; grid-template-columns: 38% 1fr; gap: 8px; padding: 14px 12px 12px 6px; overflow: hidden;
+  --cut: 14px;
+  background:
+    radial-gradient(60% 70% at 18% 62%, color-mix(in srgb, var(--el) 42%, transparent), transparent 70%),
+    linear-gradient(160deg, #2c2150, #1a1233 60%, #140d28);
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 122, .25), inset 0 0 30px rgba(0, 0, 0, .5);
+}
+.fcard-ribbon {
+  position: absolute; top: 0; right: 14px; width: 34px; height: 44px; display: grid; place-items: start center; padding-top: 6px; font-size: 18px;
+  background: linear-gradient(180deg, var(--el), var(--el-d)); box-shadow: inset 0 0 0 2px rgba(255, 220, 150, .6);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5));
+}
+.fcard-mon { position: relative; display: grid; place-items: end center; min-height: 150px; }
+.fcard-mon img { position: relative; z-index: 1; width: 100%; max-height: 150px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .55)); animation: bob 2.4s ease-in-out infinite; }
+.fcard-rock {
+  position: absolute; bottom: 2px; left: 6%; width: 88%; height: 26px; border-radius: 50%;
+  background: radial-gradient(closest-side, #3a2c4f, #241a35 70%, transparent 72%), radial-gradient(closest-side, var(--el), transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--el) 70%, transparent), inset 0 -4px 0 rgba(0, 0, 0, .4);
+}
+.fcard-info { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fcard-name { display: flex; align-items: center; gap: 6px; padding-right: 40px; min-width: 0; }
+.fcard-name span { font: 700 24px/1.1 var(--display); background: linear-gradient(#fff, #ffd9a6); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 0 #3a1d00); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fcard-name em { flex: none; font: 600 12px var(--display); font-style: normal; color: var(--gold); padding: 2px 8px; border-radius: 99px; background: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px rgba(255, 201, 60, .45); }
+.fcard-box {
+  --cut: 7px; display: flex; align-items: center; gap: 6px; padding: 6px 9px; font-size: 13px; min-width: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(0, 0, 0, .2)), #251b44;
+  box-shadow: inset 0 0 0 1px rgba(190, 150, 255, .28);
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
+}
+.fcard-box b { font: 700 16px var(--display); }
+.fcard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.fcard-stats .fcard-box { justify-content: center; }
+.fcard-perk { --cut: 6px; clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); align-items: flex-start; padding: 8px; }
+.fcard-perk p { font-size: 12px; line-height: 1.3; }
+.fcard-perk p b { font: 700 15px var(--display); color: var(--gold); }
+.fcard-perk p small { font-size: 11.5px; color: #ffd9a6; }
+.fcard-perk p span { color: #e8c6f5; font-weight: 600; }
+.hexa, .hexa::before { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.hexa { flex: none; position: relative; width: 34px; height: 38px; display: grid; place-items: center; font-size: 17px; background: linear-gradient(135deg, #ffe2a0, #c97a1f 50%, #ffcf70); }
+.hexa::before { content: ''; position: absolute; inset: 2px; background: radial-gradient(circle, color-mix(in srgb, var(--el) 65%, #000), #1a1030); }
+.hexa { isolation: isolate; } .hexa::before { z-index: -1; }
+.fcard-league { justify-content: center; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.fcard-league i { color: var(--gold); font-style: normal; }
+.fcard-energy { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 3px; border-radius: 99px; background: rgba(0, 0, 0, .3); box-shadow: inset 0 0 0 1px rgba(190, 150, 255, .22); }
+.fcard-energy .orb { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #4aa8ff, #123a8a); box-shadow: 0 0 0 2px #c9a24a, 0 0 10px rgba(74, 168, 255, .6); }
+.fcard-energy .orb .ico { width: 18px; height: 18px; }
+.fcard-energy i { flex: 1; height: 12px; border-radius: 6px; background: rgba(0, 0, 0, .45); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), 0 0 0 1px rgba(190, 150, 255, .18); }
+.fcard-energy i.on { background: linear-gradient(180deg, #ffe58a, var(--gold) 60%, var(--gold-d)); box-shadow: 0 0 8px rgba(255, 201, 60, .6); }
+@media (prefers-reduced-motion: reduce) { .fcard-mon img { animation: none; } }

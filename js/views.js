@@ -179,15 +179,25 @@ function battleTab() {
   const mon = active(), me = fighter(mon), lg = league(S.me.trophies);
   const egg = me.level === 0, can = !egg && S.me.energy > 0;
   const pips = Array.from({ length: MAX_ENERGY }, (_, i) => `<i class="${i < S.me.energy ? 'on' : ''}"></i>`).join('');
-  return `<section class="card fightercard el-${mon.element}">
-      ${monImg(mon)}
-      <div><h3>${h(mon.name)} <small>Lv ${me.level}</small></h3>
-        <p class="muted">${egg ? 'Eggs can’t fight. Hatch it first!' : `❤️ ${me.maxHp} HP · ⚔️ ${me.atk} ATK`}</p>
-        ${egg ? '' : `<p class="perk">✨ <b>${ELEMENTS[mon.element].perk.name}</b> · ${perkText(mon.element)}</p>`}
-        <p>${lg.icon} ${lg.name} league · ${fmt(S.me.trophies)} trophies</p>
-        <div class="pips" aria-label="${S.me.energy} of ${MAX_ENERGY} energy">${ENERGY} ${pips}</div>
+  const el = ELEMENTS[mon.element], perk = el.perk;
+  return `<section class="fcard el-${mon.element}"><div class="fcard-frame">
+      <div class="fcard-in">
+        <span class="fcard-ribbon" aria-label="${el.name} family">${el.emoji}</span>
+        <div class="fcard-mon">${monImg(mon)}<i class="fcard-rock"></i></div>
+        <div class="fcard-info">
+          <h2 class="fcard-name"><span>${h(mon.name)}</span><em>Lv. ${me.level}</em></h2>
+          ${egg ? '<p class="fcard-box fcard-note">Eggs can’t fight. Hatch it first!</p>' : `
+          <div class="fcard-stats">
+            <span class="fcard-box">❤️ <b>${me.maxHp}</b> HP</span>
+            <span class="fcard-box">⚔️ <b>${me.atk}</b> ATK</span>
+          </div>
+          <div class="fcard-box fcard-perk"><span class="hexa">${el.emoji}</span>
+            <p><b>${perk.name}</b> <small>· ${perk.healMult ? 'Guard' : el.blast}</small><br><span>${perkText(mon.element, false)}</span></p></div>`}
+          <div class="fcard-box fcard-league">${lg.icon} ${lg.name} league <i>·</i> 🏆 ${fmt(S.me.trophies)}</div>
+          <div class="fcard-energy" aria-label="${S.me.energy} of ${MAX_ENERGY} energy"><span class="orb">${ENERGY}</span>${pips}</div>
+        </div>
       </div>
-    </section>
+    </div></section>
     <p class="hint">Every ${PAGES_PER_ENERGY} pages you read charges 1 ${ENERGY}. A battle costs 1 ${ENERGY}.</p>
     <h3 class="h">Opponents</h3>
     <section class="card list">

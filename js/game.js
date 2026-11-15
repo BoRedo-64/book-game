@@ -112,10 +112,11 @@ export const guardHeal = (el) => BASE_HEAL * (ELEMENTS[el].perk.healMult ?? 1);
 // and each perk is worth about the same (~58% vs an identical monster with no perk).
 
 /** Plain-language description of each family's battle perk. */
-export function perkText(el) {
-  const p = ELEMENTS[el].perk;
-  if (p.burnTurns) return `${ELEMENTS[el].blast} burns the foe for ${p.burnTurns} turns, even through Guard.`;
-  if (p.cooldown) return `${ELEMENTS[el].blast} recharges in ${p.cooldown} turn instead of ${BASE_COOLDOWN}.`;
+export function perkText(el, withMove = true) {
+  const p = ELEMENTS[el].perk, mv = withMove ? `${ELEMENTS[el].blast} ` : '';
+  const cap = (t) => t[0].toUpperCase() + t.slice(1);
+  if (p.burnTurns) return cap(`${mv}burns the foe for ${p.burnTurns} turns, even through Guard.`);
+  if (p.cooldown) return cap(`${mv}recharges in ${p.cooldown} turn instead of ${BASE_COOLDOWN}.`);
   if (p.healMult) return `Guard heals ${Math.round((p.healMult - 1) * 100)}% more (${Math.round(guardHeal(el) * 100)}% of max HP).`;
   return '';
 }
