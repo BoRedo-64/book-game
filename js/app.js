@@ -30,7 +30,7 @@ function render() {
 function sounds() {
   Audio.music(!S.ready ? null : S.battle ? 'battle' : 'home');
   const p = !S.battle && S.party[0];
-  if (p && p !== lastParty) Audio.sfx({ hatch: 'evolve', evolve: 'evolve', level: 'level' }[p.type]);
+  if (p && p !== lastParty) Audio.sfx({ hatch: 'evolve', evolve: 'evolve', fuse: 'evolve', level: 'level' }[p.type]);
   lastParty = p || null;
 }
 
@@ -119,7 +119,8 @@ function step(bt, who, move) {
   const r = G.applyMove(a, bt[other], move);
   bt.log = (burned ? `${a.name} is hurt by the burn (−${burned}). ` : '') + r.text;
   bt.anim = { [who]: move === 'guard' ? 'guarding' : 'lunge', [other]: r.dmg ? 'hit' : '' };
-  bt.pop = r.dmg ? { [other]: { text: `−${r.dmg}`, cls: r.crit ? 'crit' : '' } } : { [who]: { text: `+${r.heal}`, cls: 'heal' } };
+  bt.pop = r.miss ? { [who]: { text: 'Miss!', cls: 'miss' } }
+    : r.dmg ? { [other]: { text: `−${r.dmg}`, cls: r.crit ? 'crit' : '' } } : { [who]: { text: `+${r.heal}`, cls: 'heal' } };
   if (burned && !bt.pop[who]) bt.pop[who] = { text: `−${burned}`, cls: 'burn' };
   render();
 }
@@ -405,6 +406,16 @@ const F = {
     post('egg', { element: el });
     S.sheet = null; S.tab = 'home'; render(); window.scrollTo(0, 0);
     toast(`${h(name)} joined your team!`);
+  },
+  async fuse() {
+    const name = val('fz-name'), el = S.sheet.el, e = G.ELEMENTS[el];
+    if (!name || !G.fusable(S.monsters).includes(el)) return;
+    const m = await db.insert('monsters', { owner: S.me.id, element: el, name });
+    S.monsters.push(m);
+    await saveMe({ active_monster: m.id });
+    post('fuse', { element: el, name, parents: e.parents });
+    S.party.push({ type: 'fuse', element: el, name, parents: e.parents });
+    S.sheet = null; S.tab = 'home'; render(); window.scrollTo(0, 0);
   },
   async rename() {
     const name = val('rn'), mon = active();

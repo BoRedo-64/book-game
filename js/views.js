@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -71,7 +71,7 @@ function starterView() {
     <div class="starters">${STARTERS.map((k) => [k, ELEMENTS[k]]).map(([k, e]) => `
       <button class="starter-card el-${k} ${pick === k ? 'on' : ''}" data-a="pickStarter" data-el="${k}">
         <img src="${monsterImg(k, 0)}" alt="${e.name} egg">
-        <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${ELEMENTS[e.beats].name}</small><small class="perk">✨ ${e.perk.name}: ${perkText(k)}</small></div>
+        <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${e.beats.map((b) => ELEMENTS[b].name).join(' & ')}</small><small class="perk">✨ ${e.perk.name}: ${perkText(k)}</small></div>
       </button>`).join('')}</div>
     <form data-form="starter" class="stack">
       <input id="st-name" placeholder="Name your monster" maxlength="20" value="${h(S.starter.name)}" required>
@@ -125,6 +125,7 @@ function homeView() {
   const r = raid(), bonus = streakBonus(streak());
   return `${topbar()}${stageCard()}
     <button class="btn primary big wide" data-a="openLog">📖 Log reading</button>
+    ${fusionBanner()}
     <section class="card goal">
       <div class="ring" style="--p:${pct(pt, goal)}"><b>${pt}</b><small>/ ${goal}</small></div>
       <div><h3>${pt >= goal ? 'Daily goal done!' : 'Today’s pages'}</h3>
@@ -293,6 +294,7 @@ function eventLine(e) {
     case 'streak': return `is on a <b>${d.days}-day streak</b> 🔥`;
     case 'battle': return `beat <b>${h(d.foe)}</b> in battle ⚔️`;
     case 'egg': return `adopted a new ${ELEMENTS[d.element]?.name} egg 🥚`;
+    case 'fuse': return `bred a <b>${ELEMENTS[d.element]?.name}</b> egg from ${(d.parents || []).map((p) => ELEMENTS[p]?.name).join(' + ')} 🧬`;
     default: return 'did something bookish';
   }
 }
@@ -358,6 +360,46 @@ function heatmap() {
   return `<div class="heat">${cells}</div>`;
 }
 
+// ---------- fusion (breeding hybrids) ----------
+const HYBRIDS = Object.keys(ELEMENTS).filter((k) => ELEMENTS[k].parents);
+const bestOf = (el) => S.monsters.filter((m) => m.element === el).sort((a, b) => b.xp - a.xp)[0];
+
+function fusionCard(k) {
+  const e = ELEMENTS[k], owned = S.monsters.some((m) => m.element === k), ready = fusable(S.monsters).includes(k);
+  const parent = (p) => {
+    const m = bestOf(p), lv = m ? levelInfo(m.xp).level : 0, done = m && levelInfo(m.xp).stage >= 3;
+    return `<div class="fz-parent el-${p} ${done ? 'done' : ''}">
+      <span class="fz-orb">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="" class="ghost">`}</span>
+      <small>${m ? (done ? '✓ Ready' : `Lv ${lv} / ${EVOLVE_2}`) : `Need ${ELEMENTS[p].name}`}</small>${m && !done ? bar(lv, EVOLVE_2) : ''}</div>`;
+  };
+  return `<section class="fusion el-${k} ${ready ? 'ready' : ''} ${owned ? 'owned' : ''}">
+    <div class="fz-row">${parent(e.parents[0])}<span class="fz-plus">+</span>${parent(e.parents[1])}<span class="fz-plus">=</span>
+      <div class="fz-child"><span class="fz-orb"><img src="${monsterImg(k, 0)}" alt="" class="${owned || ready ? '' : 'ghost'}"></span>
+        <small>${owned || ready ? `${e.emoji} ${e.name}` : '???'}</small></div></div>
+    <p class="muted">${owned ? `You bred a ${e.name}! Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} stay on your team.`
+      : `Raise ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} to their final form (Lv ${EVOLVE_2}) to breed a ${ready ? e.name : 'mystery'} egg. You keep both parents.`}</p>
+    ${owned ? '' : `<button class="btn ${ready ? 'gold' : 'ghost'} wide" data-a="sheet" data-s="fuse" data-el="${k}" ${ready ? '' : 'disabled'}>${ready ? '🧬 Fuse!' : '🔒 Locked'}</button>`}
+  </section>`;
+}
+function fusionBanner() {
+  const k = fusable(S.monsters)[0];
+  if (!k) return '';
+  const e = ELEMENTS[k];
+  return `<button class="card fzbanner el-${k}" data-a="sheet" data-s="fuse" data-el="${k}">
+    <span class="fz-orb"><img src="${monsterImg(k, 0)}" alt=""></span>
+    <span><small>⚡ A STORM IS BREWING</small><b>Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} can breed a new monster!</b></span></button>`;
+}
+function fuseSheet(s) {
+  const e = ELEMENTS[s.el];
+  return `<div class="fz-ritual el-${s.el}">
+      ${e.parents.map((p, i) => `<img class="fz-p p${i}" src="${monsterImg(p, 3)}" alt="">`).join('')}
+      <span class="fz-vortex"></span><img class="fz-egg" src="${monsterImg(s.el, 0)}" alt=""></div>
+    <h2>${e.emoji} ${e.name} egg</h2>
+    <p class="muted">${e.blurb} ${e.perk.name}: ${perkText(s.el)} Strong against ${e.beats.map((b) => ELEMENTS[b].name).join(' & ')}.</p>
+    <form data-form="fuse" class="stack"><input id="fz-name" placeholder="Name your new monster" maxlength="20" required>
+      <button class="btn gold big wide">🧬 Fuse ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')}</button></form>`;
+}
+
 function dex() {
   return `<div class="dex">${Object.keys(ELEMENTS).map((el) => {
     const best = Math.max(-1, ...S.monsters.filter((m) => m.element === el).map((m) => levelInfo(m.xp).stage));
@@ -379,6 +421,7 @@ function meView() {
     </section>
     <button class="btn gold wide" data-a="go" data-tab="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
+    ${HYBRIDS.map((k) => `<h3 class="h">🧬 Fusion</h3>${fusionCard(k)}`).join('')}
     <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
     <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
@@ -478,7 +521,13 @@ const SHOP = [
     id: 'monsters', name: 'Monsters', icon: '🥚', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
     items: () => STARTERS.filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
       { name: `${ELEMENTS[e].name} egg`, desc: `${ELEMENTS[e].perk.name}: ${perkText(e)}`, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
-        price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' })),
+        price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' }))
+      .concat(HYBRIDS.filter((k) => !S.monsters.some((m) => m.element === k)).map((k) => {
+        const e = ELEMENTS[k], ready = fusable(S.monsters).includes(k);
+        return { name: ready ? `${e.name} egg` : 'Mystery egg', desc: `Can't be bought. Breed it from ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')} at Lv ${EVOLVE_2}.`,
+          art: `<img src="${monsterImg(k, 0)}" alt="" class="${ready ? '' : 'ghost'}">`, artCls: `el-${k}`,
+          action: 'sheet', attrs: `data-s="fuse" data-el="${k}"`, status: ready ? 'fuse' : 'locked' };
+      })),
   },
   {
     id: 'habitats', name: 'Habitats', icon: '🏞️', blurb: 'Backdrops for your monster at home and in battle.',
@@ -493,8 +542,8 @@ const SHOP = [
 ];
 
 function shopItem(it) {
-  const label = { full: 'Full', on: 'In use', owned: 'Use' }[it.status] || `${it.price} ${COIN}`;
-  const off = it.status === 'full' || it.status === 'on' || (!it.status && it.price > S.me.coins);
+  const label = { full: 'Full', on: 'In use', owned: 'Use', fuse: '🧬 Fuse', locked: '🔒 Locked' }[it.status] || `${it.price} ${COIN}`;
+  const off = ['full', 'on', 'locked'].includes(it.status) || (!it.status && it.price > S.me.coins);
   return `<div class="sitem ${it.status}">
     <div class="sitem-art ${it.artCls || ''}">${it.art}</div>
     <b>${h(it.name)}</b><small>${h(it.desc)}</small>
@@ -537,7 +586,7 @@ function settingsSheet(s) {
     <button class="btn ghost wide" data-a="logout">Log out</button>`;
 }
 
-const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet };
+const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet };
 
 // ---------- overlays ----------
 function partyView(p) {
@@ -552,6 +601,10 @@ function partyView(p) {
   } else if (p.type === 'level') {
     art = `<div class="burst"><img src="${monsterImg(p.element, p.stage)}" alt=""><span>Lv ${p.level}</span></div>`;
     title = 'Level up!'; text = `<b>${h(p.name)}</b> is now level ${p.level}. Stronger in battle.`;
+  } else if (p.type === 'fuse') {
+    art = `<div class="fz-ritual big el-${p.element}">${p.parents.map((x, i) => `<img class="fz-p p${i}" src="${monsterImg(x, 3)}" alt="">`).join('')}
+      <span class="fz-vortex"></span><img class="fz-egg" src="${monsterImg(p.element, 0)}" alt=""></div>`;
+    title = 'Fusion!'; text = `${p.parents.map((x) => ELEMENTS[x].name).join(' and ')} made a <b>${el.stages[0]}</b>. Read ${HATCH_PAGES} pages to hatch <b>${h(p.name)}</b>!`;
   } else if (p.type === 'finish') {
     art = '<div class="bigemoji">📕</div>';
     title = 'Book finished!'; text = `<i>${h(p.title)}</i> is done. Bonus: +${p.xp} XP and +${p.coins} ${COIN}.`;
@@ -562,13 +615,13 @@ function partyView(p) {
 
 function battleView(b) {
   const side = (f, who) => `<div class="b-side ${who} ${b.anim?.[who] || ''}">
-      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
+      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${f.shock ? '<span class="burnbadge shockbadge" title="Electrocuted">⚡ shocked</span>' : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
       <div class="b-mon"><img src="${monsterImg(f.element, f.stage)}" alt="">${b.pop?.[who] ? `<span class="pop ${b.pop[who].cls}">${b.pop[who].text}</span>` : ''}</div></div>`;
   const moves = Object.entries(MOVES).map(([k, m]) => {
     const cd = k === 'blast' ? b.me.cd : 0;
     const label = k === 'blast' ? ELEMENTS[b.me.element].blast : m.name;
     const p = ELEMENTS[b.me.element].perk;
-    const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : m.desc)
+    const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : p.shockTurns ? 'Big hit + shock' : m.desc)
       : k === 'guard' && b.me.guardRun ? `Heal ${Math.round(guardFactor(b.me) * 100)}% (tired)`
       : k === 'guard' && p.healMult ? 'Block + big heal' : m.desc;
     return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;

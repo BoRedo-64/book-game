@@ -2,31 +2,38 @@
 
 export const ELEMENTS = {
   fire: {
-    name: 'Fire', emoji: '🔥', beats: 'plant', blast: 'Flame Burst',
+    name: 'Fire', emoji: '🔥', beats: ['plant'], blast: 'Flame Burst',
     stages: ['Ember Egg', 'Cindling', 'Blazekin', 'Infernox'],
     blurb: 'Hot-headed and fearless. Burns through chapters.',
     perk: { name: 'Scorch', burnTurns: 2, burnPct: 0.1 }, // blast sets the foe on fire
   },
   water: {
-    name: 'Water', emoji: '💧', beats: 'fire', blast: 'Tidal Crash',
+    name: 'Water', emoji: '💧', beats: ['fire'], blast: 'Tidal Crash',
     stages: ['Tide Egg', 'Dribblet', 'Surgefin', 'Maelstrom'],
     blurb: 'Calm and clever. Goes with the flow of a good story.',
     perk: { name: 'Quick Current', cooldown: 1 }, // blast recharges faster
   },
   plant: {
-    name: 'Plant', emoji: '🌿', beats: 'water', blast: 'Petal Storm',
+    name: 'Plant', emoji: '🌿', beats: ['water'], blast: 'Petal Storm',
     stages: ['Sprout Egg', 'Leaflet', 'Bloomane', 'Eldergrove'],
     blurb: 'Patient and loyal. Grows a little with every page.',
     perk: { name: 'Regrowth', healMult: 1.75 }, // guard heals more
   },
-  // Hybrid of fire + water. Not a starter: how it's obtained and its perk are still to come.
+  // Hybrid: bred from a final-stage fire + water (see canFuse). Strong vs fire and plant, weak to nothing,
+  // and +1% HP/ATK per level on top of normal growth.
   tornado: {
-    name: 'Tornado', emoji: '🌪️', beats: null, blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
+    name: 'Tornado', emoji: '🌪️', beats: ['fire', 'plant'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
     stages: ['Gale Egg', 'Whirlet', 'Cyclonyx', 'Tempestor'],
     blurb: 'Born where fire meets water. Restless as a page-turner.',
-    perk: {},
+    perk: { name: 'Electrocute', shockTurns: 1, missChance: 0.4 }, // blast makes the foe's attacks miss
+    statBonus: 0.01,
   },
 };
+/** Hybrids `me` can breed right now: both parents owned at their final stage and no hybrid yet. */
+export function fusable(monsters) {
+  return Object.entries(ELEMENTS).filter(([k, e]) => e.parents && !monsters.some((m) => m.element === k)
+    && e.parents.every((p) => monsters.some((m) => m.element === p && levelInfo(m.xp).stage >= 3))).map(([k]) => k);
+}
 /** Families you can pick at the start, buy as eggs and meet in the wild. */
 export const STARTERS = Object.keys(ELEMENTS).filter((k) => ELEMENTS[k].starter !== false);
 
@@ -98,13 +105,14 @@ export const streakBonus = (streak) => (streak >= 30 ? 1.2 : streak >= 7 ? 1.1 :
 // ---------- battle ----------
 export function fighter(mon, extra = {}) {
   const { level, stage } = levelInfo(mon.xp);
-  const hp = 50 + level * 14;
-  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: 8 + level * 3, cd: 0, guard: false, guardRun: 0, burn: null, ...extra };
+  const boost = 1 + (ELEMENTS[mon.element].statBonus || 0) * level;
+  const hp = Math.round((50 + level * 14) * boost);
+  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: Math.round((8 + level * 3) * boost), cd: 0, guard: false, guardRun: 0, burn: null, shock: null, ...extra };
 }
 
 export function elementMult(a, b) {
-  if (ELEMENTS[a].beats === b) return 1.5;
-  if (ELEMENTS[b].beats === a) return 0.7;
+  if (ELEMENTS[a].beats.includes(b)) return 1.5;
+  if (ELEMENTS[b].beats.includes(a)) return 0.7;
   return 1;
 }
 
@@ -126,6 +134,7 @@ export function perkText(el, withMove = true) {
   const cap = (t) => t[0].toUpperCase() + t.slice(1);
   if (p.burnTurns) return cap(`${mv}burns the foe for ${p.burnTurns} turns, even through Guard.`);
   if (p.cooldown) return cap(`${mv}recharges in ${p.cooldown} turn instead of ${BASE_COOLDOWN}.`);
+  if (p.shockTurns) return cap(`${mv}electrocutes the foe: ${Math.round(p.missChance * 100)}% chance its next ${p.shockTurns > 1 ? `${p.shockTurns} attacks miss` : 'attack misses'}.`);
   if (p.healMult) return `Guard heals ${Math.round((p.healMult - 1) * 100)}% more (${Math.round(guardHeal(el) * 100)}% of max HP).`;
   return '';
 }
@@ -146,6 +155,7 @@ export function applyMove(a, b, move) {
   a.guard = false;
   if (a.cd > 0) a.cd--;
   if (move === 'guard') {
+    if (a.shock && --a.shock.turns <= 0) a.shock = null;
     // Each Guard in a row heals half as much as the last, so guarding forever can't stall a fight.
     const tired = guardFactor(a);
     a.guardRun = (a.guardRun || 0) + 1;
@@ -154,6 +164,11 @@ export function applyMove(a, b, move) {
     return { move, heal, dmg: 0, text: `${a.name} braces and recovers ${heal} HP.${tired < 1 ? ' (tiring…)' : ''}` };
   }
   a.guardRun = 0;
+  const shocked = a.shock;
+  if (shocked && --a.shock.turns <= 0) a.shock = null;
+  if (shocked && Math.random() < shocked.miss) { // a missed blast stays charged
+    return { move, dmg: 0, miss: true, text: `${a.name} is shocked and misses!` };
+  }
   let dmg = a.atk * (0.85 + Math.random() * 0.3);
   let mult = 1;
   if (move === 'blast') { mult = elementMult(a.element, b.element); dmg *= 1.6 * mult; a.cd = blastCooldown(a.element); }
@@ -172,6 +187,10 @@ export function applyMove(a, b, move) {
   if (move === 'blast' && perk.burnTurns && b.hp > 0) {
     b.burn = { turns: perk.burnTurns, dmg: Math.max(1, Math.round(a.atk * perk.burnPct)) };
     text += ` ${b.name} is burning!`;
+  }
+  if (move === 'blast' && perk.shockTurns && b.hp > 0) {
+    b.shock = { turns: perk.shockTurns, miss: perk.missChance };
+    text += ` ${b.name} is electrocuted!`;
   }
   return { move, dmg, crit, mult, text };
 }

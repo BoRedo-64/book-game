@@ -459,3 +459,38 @@ body.splashing { overflow: hidden; }
 .fcard-energy i { flex: 1; height: 12px; border-radius: 6px; background: rgba(0, 0, 0, .45); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), 0 0 0 1px rgba(190, 150, 255, .18); }
 .fcard-energy i.on { background: linear-gradient(180deg, #ffe58a, var(--gold) 60%, var(--gold-d)); box-shadow: 0 0 8px rgba(255, 201, 60, .6); }
 @media (prefers-reduced-motion: reduce) { .fcard-mon img { animation: none; } }
+
+/* ---------- fusion ---------- */
+.ghost { filter: brightness(0) drop-shadow(0 0 6px rgba(205, 213, 255, .35)); opacity: .7; }
+.fusion { background: linear-gradient(160deg, color-mix(in srgb, var(--el) 22%, var(--card)), var(--card)); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; text-align: center; }
+.fusion.ready { border-color: var(--gold); box-shadow: 0 0 22px rgba(255, 201, 60, .25); }
+.fusion p { font-size: 13.5px; }
+.fz-row { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: start; gap: 4px; }
+.fz-parent, .fz-child { display: grid; justify-items: center; gap: 4px; min-width: 0; }
+.fz-parent .bar { width: 80%; }
+.fz-plus { font: 700 22px var(--display); color: var(--muted); margin-top: 22px; }
+.fz-orb { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, color-mix(in srgb, var(--el) 40%, transparent), rgba(0, 0, 0, .25) 70%); box-shadow: inset 0 0 0 2px var(--line); }
+.fz-orb img { width: 82%; height: 82%; object-fit: contain; }
+.fz-parent.done .fz-orb { box-shadow: inset 0 0 0 2px var(--good), 0 0 12px rgba(88, 214, 141, .4); }
+.fusion.ready .fz-child .fz-orb { box-shadow: inset 0 0 0 2px var(--gold), 0 0 16px rgba(255, 201, 60, .5); animation: bob 1.8s ease-in-out infinite; }
+.fzbanner { display: flex; align-items: center; gap: 12px; text-align: left; border-color: var(--gold); background: linear-gradient(110deg, color-mix(in srgb, var(--el) 35%, var(--card)), var(--card)); animation: fzglow 2s ease-in-out infinite; }
+.fzbanner small { color: var(--gold); } .fzbanner b { display: block; font-family: var(--display); font-weight: 600; }
+.fzbanner .fz-orb { flex: none; }
+@keyframes fzglow { 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--el) 60%, transparent); } }
+/* the ritual: both parents spiral into a vortex, which flashes into the egg */
+.fz-ritual { position: relative; height: 170px; display: grid; place-items: center; margin-bottom: 6px; }
+.fz-ritual.big { width: 300px; height: 240px; }
+.fz-ritual img { position: absolute; width: 110px; object-fit: contain; }
+.fz-ritual.big img { width: 140px; }
+.fz-p { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); }
+.fz-p.p0 { animation: fz-left 2.4s ease-in infinite; } .fz-p.p1 { animation: fz-right 2.4s ease-in infinite; }
+.fz-vortex { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(from 0deg, transparent, var(--el-soft), transparent 40%, #ff9a4a, transparent 70%, #4aa8ff, transparent); filter: blur(4px); opacity: 0; animation: fz-spin 2.4s linear infinite; }
+.fz-egg { opacity: 0; animation: fz-egg 2.4s ease-out infinite; filter: drop-shadow(0 0 18px var(--el-soft)); }
+.party .fz-p, .party .fz-vortex, .party .fz-egg { animation-iteration-count: 1; animation-fill-mode: both; }
+@keyframes fz-left { 0% { transform: translateX(-95px) scale(.8); opacity: 1; } 55% { transform: translateX(0) rotate(-200deg) scale(.3); opacity: 1; } 60%, 100% { transform: translateX(0) scale(0); opacity: 0; } }
+@keyframes fz-right { 0% { transform: translateX(95px) scale(.8); opacity: 1; } 55% { transform: translateX(0) rotate(200deg) scale(.3); opacity: 1; } 60%, 100% { transform: translateX(0) scale(0); opacity: 0; } }
+@keyframes fz-spin { 0%, 25% { opacity: 0; transform: rotate(0) scale(.3); } 55% { opacity: 1; transform: rotate(540deg) scale(1.2); } 70% { opacity: 1; transform: rotate(720deg) scale(1.6); filter: blur(4px) brightness(3); } 80%, 100% { opacity: 0; transform: rotate(800deg) scale(2); } }
+@keyframes fz-egg { 0%, 62% { opacity: 0; transform: scale(.4); } 75% { opacity: 1; transform: scale(1.15); } 85%, 100% { opacity: 1; transform: scale(1); } }
+.pop.miss { color: #cdd5ff; text-shadow: 0 2px 0 #2a2f7a, 0 0 12px #7f8cff; font-size: 24px; }
+.shockbadge { background: rgba(127, 140, 255, .25); color: #cdd5ff; }
+@media (prefers-reduced-motion: reduce) { .fz-p, .fz-vortex { display: none; } .fz-egg { animation: none; opacity: 1; } }
