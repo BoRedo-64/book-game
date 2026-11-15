@@ -10,7 +10,7 @@
 .el-plant, body[data-el='plant'] { --el: #5fc43c; --el-d: #2f861b; --el-soft: #b5e88f; }
 
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
-html { background: #0e0a22; }
+html { background: #0e0a22; touch-action: manipulation; } /* no double-tap zoom; pinch-zoom still works */
 body {
   font: 700 15px/1.4 'Nunito', system-ui, sans-serif; color: var(--text); background: #0e0a22;
   min-height: 100dvh; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased;
@@ -32,7 +32,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 button:disabled { cursor: default; }
 img { display: block; max-width: 100%; user-select: none; -webkit-user-drag: none; }
 input {
-  font: inherit; color: var(--text); width: 100%; min-width: 0; padding: 13px 14px; border-radius: 14px;
+  font: inherit; font-size: 16px; /* under 16px makes iPhone zoom in when you tap the field */
+  color: var(--text); width: 100%; min-width: 0; padding: 13px 14px; border-radius: 14px;
   background: #140e30; border: 2px solid var(--line); outline: 0;
 }
 input:focus { border-color: var(--el); }
