@@ -312,7 +312,7 @@ const A = {
       const rare = Object.keys(G.ELEMENTS).filter((k) => !G.STARTERS.includes(k)).find(() => Math.random() < G.RARE_WILD_CHANCE);
       const el = rare || G.STARTERS[Math.floor(Math.random() * G.STARTERS.length)];
       const xp = G.xpForLevel(Math.max(1, me.level + Math.floor(Math.random() * 4) - 2));
-      foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp, ...(rare ? { rare: true } : {}) });
+      foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp }, { rare: !!rare });
     }
     await saveMe({ energy: S.me.energy - 1 });
     S.sheet = null;
