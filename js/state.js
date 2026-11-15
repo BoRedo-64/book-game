@@ -9,7 +9,7 @@ export const S = {
   me: null, monsters: [], books: [], logs: [],
   friends: [], incoming: [], outgoing: [], ships: [], fmon: {}, flogs: [],
   events: [], cheers: [], duels: [], battles: [], people: {},
-  tab: 'home', sub: { library: 'reading', arena: 'battle', friends: 'feed' },
+  tab: 'home', sub: { library: 'reading', arena: 'battle', friends: 'feed', shop: 'all' },
   sheet: null, battle: null, party: [], busy: false,
   auth: { mode: 'signup', error: '', name: '' }, starter: { element: null, name: '' },
 };

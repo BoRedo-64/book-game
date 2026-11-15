@@ -164,11 +164,11 @@ export function hash(str) {
 }
 
 export const HABITATS = {
-  default: { name: 'Home Turf', price: 0 },
-  library: { name: 'Starlit Library', price: 120 },
-  sunset: { name: 'Sunset Peaks', price: 120 },
-  crystal: { name: 'Crystal Cave', price: 180 },
-  clouds: { name: 'Cloud Kingdom', price: 180 },
+  default: { name: 'Home Turf', price: 0, desc: 'Where every monster starts.' },
+  library: { name: 'Starlit Library', price: 120, desc: 'Late-night reading under the stars.' },
+  sunset: { name: 'Sunset Peaks', price: 120, desc: 'Golden hour on the mountaintops.' },
+  crystal: { name: 'Crystal Cave', price: 180, desc: 'Glowing gems deep underground.' },
+  clouds: { name: 'Cloud Kingdom', price: 180, desc: 'A sky castle above the clouds.' },
 };
 
 export const DUEL_TYPES = {

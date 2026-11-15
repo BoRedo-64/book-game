@@ -95,7 +95,7 @@ function topbar() {
   return `<header class="topbar">
     <span class="stat ${lit ? 'lit' : ''}" title="Day streak">🔥 <b>${st}</b></span>
     <span class="stat" title="Battle energy">${ENERGY} <b>${S.me.energy}</b><small>/${MAX_ENERGY}</small></span>
-    <button class="stat" data-a="sheet" data-s="shop" title="Coins">${COIN} <b>${fmt(S.me.coins)}</b></button>
+    <button class="stat" data-a="go" data-tab="shop" title="Coins">${COIN} <b>${fmt(S.me.coins)}</b></button>
   </header>`;
 }
 
@@ -365,7 +365,7 @@ function meView() {
       <div><b>${S.me.best_streak}</b><small>best streak</small></div>
       <div><b>${S.me.wins}</b><small>battles won</small></div>
     </section>
-    <button class="btn gold wide" data-a="sheet" data-s="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
+    <button class="btn gold wide" data-a="go" data-tab="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
     <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
@@ -448,24 +448,61 @@ function newDuelSheet(s) {
     <button class="btn primary big wide" data-a="duelSend" data-id="${fid}" data-days="${days}">Send challenge</button>`;
 }
 
-function shopSheet() {
-  const owned = S.me.state.habitats || [], els = new Set(S.monsters.map((m) => m.element));
-  const eggs = Object.keys(ELEMENTS).filter((e) => !els.has(e));
-  const item = (iconHtml, name, desc, price, action, attrs = '', disabled = false, label = '') => `<div class="row">${iconHtml}
-    <div><b>${name}</b><small>${desc}</small></div>
-    <button class="btn gold sm" data-a="${action}" ${attrs} ${disabled || (price > S.me.coins) ? 'disabled' : ''}>${label || `${price} ${COIN}`}</button></div>`;
-  return `<h2>Shop</h2><p class="wallet">${COIN} ${fmt(S.me.coins)}</p>
-    <section class="list">
-      ${item('<span class="avatar wild">❄️</span>', 'Streak freeze', `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, 60, 'buy', 'data-item="freeze"', S.me.freezes >= 2, S.me.freezes >= 2 ? 'Full' : '')}
-      ${item('<span class="avatar wild"><img src="assets/energy.webp" alt=""></span>', 'Energy drink', 'Refills battle energy to full.', 40, 'buy', 'data-item="energy"', S.me.energy >= MAX_ENERGY, S.me.energy >= MAX_ENERGY ? 'Full' : '')}
-      ${eggs.map((e) => item(`<span class="avatar el-${e}"><img src="${monsterImg(e, 0)}" alt=""></span>`, `${ELEMENTS[e].name} egg`, 'Raise a second monster. Switch any time.', 300, 'sheet', `data-s="egg" data-el="${e}"`)).join('')}
-    </section>
-    <h3 class="h">Habitats</h3>
-    <section class="habs">${Object.entries(HABITATS).map(([k, hb]) => {
-      const has = k === 'default' || owned.includes(k), on = S.me.habitat === k;
-      return `<button class="hab hab-${k} el-${active().element} ${on ? 'on' : ''}" data-a="${has ? 'setHabitat' : 'buy'}" data-item="habitat" data-id="${k}" ${!has && hb.price > S.me.coins ? 'disabled' : ''}>
-        <b>${hb.name}</b><small>${on ? 'In use' : has ? 'Use' : `${hb.price} ${COIN}`}</small></button>`;
-    }).join('')}</section>`;
+// ---------- shop ----------
+// The catalog. To add an item, add an entry to a category's items(); to add a
+// category, add an object here. Each item: { name, desc, art, price, action, attrs, status }
+// status: '' (buyable), 'full', 'owned', 'on' (owned and in use). Buying is handled by A.buy in app.js.
+const SHOP = [
+  {
+    id: 'boosts', name: 'Boosts', icon: '⚡', blurb: 'A helping hand for busy reading days.',
+    items: () => [
+      { name: 'Streak freeze', desc: `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, art: '<span class="sart">❄️</span>',
+        price: 60, action: 'buy', attrs: 'data-item="freeze"', status: S.me.freezes >= 2 ? 'full' : '' },
+      { name: 'Energy drink', desc: `Refills battle energy to full (${S.me.energy}/${MAX_ENERGY} now).`, art: `<img src="assets/energy.webp" alt="">`,
+        price: 40, action: 'buy', attrs: 'data-item="energy"', status: S.me.energy >= MAX_ENERGY ? 'full' : '' },
+    ],
+  },
+  {
+    id: 'monsters', name: 'Monsters', icon: '🥚', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
+    items: () => Object.keys(ELEMENTS).filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
+      { name: `${ELEMENTS[e].name} egg`, desc: ELEMENTS[e].blurb, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
+        price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' })),
+  },
+  {
+    id: 'habitats', name: 'Habitats', icon: '🏞️', blurb: 'Backdrops for your monster at home and in battle.',
+    items: () => Object.entries(HABITATS).map(([k, hb]) => {
+      const owned = k === 'default' || (S.me.state.habitats || []).includes(k), mon = active();
+      return { name: hb.name, desc: hb.desc,
+        art: monImg(mon), artCls: `hab hab-${k} el-${mon.element}`,
+        price: hb.price, action: owned ? 'setHabitat' : 'buy', attrs: `data-item="habitat" data-id="${k}"`,
+        status: S.me.habitat === k ? 'on' : owned ? 'owned' : '' };
+    }),
+  },
+];
+
+function shopItem(it) {
+  const label = { full: 'Full', on: 'In use', owned: 'Use' }[it.status] || `${it.price} ${COIN}`;
+  const off = it.status === 'full' || it.status === 'on' || (!it.status && it.price > S.me.coins);
+  return `<div class="sitem ${it.status}">
+    <div class="sitem-art ${it.artCls || ''}">${it.art}</div>
+    <b>${h(it.name)}</b><small>${h(it.desc)}</small>
+    <button class="btn ${it.status === 'owned' ? 'primary' : 'gold'} sm" data-a="${it.action}" ${it.attrs} ${off ? 'disabled' : ''}>${label}</button>
+  </div>`;
+}
+
+function shopView() {
+  const cur = S.sub.shop || 'all';
+  const tabs = [{ id: 'all', name: 'All', icon: '🛍️' }, ...SHOP].map((c) =>
+    `<button class="${cur === c.id ? 'on' : ''}" data-a="sub" data-tab="shop" data-sub="${c.id}">${c.icon} ${c.name}</button>`).join('');
+  const cats = SHOP.filter((c) => cur === 'all' || c.id === cur).map((c) => {
+    const items = c.items();
+    return `<section class="scat"><h3 class="h">${c.icon} ${c.name}</h3><p class="muted scat-blurb">${c.blurb}</p>
+      ${items.length ? `<div class="sgrid">${items.map(shopItem).join('')}</div>` : `<p class="card empty"><small>${c.empty || 'Nothing here yet.'}</small></p>`}</section>`;
+  }).join('');
+  return `<header class="title shophead">
+      <button class="back" data-a="go" data-tab="home" aria-label="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h1>Shop</h1><span class="stat">${COIN} <b>${fmt(S.me.coins)}</b></span></header>
+    <nav class="shoptabs" aria-label="Shop categories">${tabs}</nav>${cats}`;
 }
 
 function eggSheet(s) {
@@ -488,7 +525,7 @@ function settingsSheet(s) {
     <button class="btn ghost wide" data-a="logout">Log out</button>`;
 }
 
-const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, shop: shopSheet, egg: eggSheet, settings: settingsSheet };
+const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet };
 
 // ---------- overlays ----------
 function partyView(p) {
@@ -537,7 +574,7 @@ export function view() {
   if (!S.monsters.length) return starterView();
   if (active()) document.body.dataset.el = active().element;
   const b = badges();
-  const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, me: meView }[S.tab]();
+  const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, me: meView, shop: shopView }[S.tab]();
   const nav = [['home', 'Home'], ['library', 'Library'], ['arena', 'Arena'], ['friends', 'Friends'], ['me', 'Me']].map(([k, n]) =>
     `<button data-a="go" data-tab="${k}" class="${S.tab === k ? 'on' : ''}" ${S.tab === k ? 'aria-current="page"' : ''}>${icon(k)}<span>${n}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</button>`).join('');
   return `<main class="screen" id="screen">${screen}</main><nav class="nav">${nav}</nav>

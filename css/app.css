@@ -369,3 +369,30 @@ body.splashing { overflow: hidden; }
 @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-14px) scale(1.04, .96); } }
 @keyframes blink { 50% { opacity: .4; transform: scale(.96); } }
 @media (prefers-reduced-motion: reduce) { #splash *, #splash { animation: none !important; transition: none !important; } }
+
+/* ---------- shop page ---------- */
+.shophead { gap: 10px; justify-content: flex-start; }
+.shophead h1 { flex: 1; }
+.back { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--card2); box-shadow: 0 3px 0 #1a1340; }
+.back:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a1340; }
+.back svg { width: 22px; height: 22px; fill: none; stroke: var(--text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.shoptabs {
+  position: sticky; top: env(safe-area-inset-top); z-index: 20; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 -16px; padding: 8px 16px; background: var(--bg);
+}
+.shoptabs::-webkit-scrollbar { display: none; }
+.shoptabs button { flex: none; padding: 8px 14px; border-radius: 12px; background: var(--card2); font: 600 14px var(--display); color: var(--muted); }
+.shoptabs button.on { background: var(--gold); color: #3b2a00; }
+.scat { display: grid; gap: 10px; }
+.scat-blurb { margin: -2px 2px 0; font-size: 13.5px; }
+.sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.sitem { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 4px; min-width: 0; }
+.sitem.on { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.sitem > b { font: 600 15.5px var(--display); margin-top: 4px; }
+.sitem .btn { margin-top: 6px; width: 100%; }
+.sitem-art { height: 92px; border-radius: 14px; display: grid; place-items: center; background: #2a2160; overflow: hidden; }
+.sitem-art img { max-width: 72%; max-height: 80px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .4)); }
+.sitem-art.hab { padding: 0; border: 0; align-items: end; }
+.sitem-art.hab img { max-height: 70px; margin-bottom: 6px; }
+.sitem-art[class*='el-']:not(.hab) { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--el) 45%, transparent), #2a2160 70%); }
+.sart { font-size: 48px; line-height: 1; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .4)); }
