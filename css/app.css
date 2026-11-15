@@ -356,10 +356,11 @@ body.splashing { overflow: hidden; }
 .sp-mons { display: flex; align-items: flex-end; gap: 6px; height: 72px; }
 .sp-mons img { width: 64px; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .4)); animation: hop 1.5s ease-in-out infinite; }
 .sp-mons img:nth-child(2) { animation-delay: .2s; } .sp-mons img:nth-child(3) { animation-delay: .4s; }
-.sp-foot { height: 64px; display: grid; justify-items: center; align-content: start; gap: 10px; margin-top: 8px; }
+.sp-foot { min-height: 64px; display: grid; justify-items: center; align-content: start; gap: 10px; margin-top: 8px; }
 .sp-bar { width: 200px; height: 10px; border-radius: 99px; background: rgba(255, 255, 255, .1); overflow: hidden; }
 .sp-bar i { display: block; height: 100%; width: 6%; border-radius: inherit; background: linear-gradient(90deg, var(--gold-d), var(--gold)); box-shadow: 0 0 12px var(--gold); transition: width .45s ease; }
 .sp-msg { color: var(--muted); font-size: 14px; }
+.sp-err { color: var(--bad); font-size: 12px; max-width: 300px; } .sp-err:empty { display: none; }
 .sp-tap { display: none; font: 600 24px var(--display); color: var(--gold); background: none; border: 0; padding: 4px 12px; text-shadow: 0 0 18px rgba(255, 201, 60, .55); animation: blink 1.4s ease-in-out infinite; }
 #splash.ready .sp-bar, #splash.ready .sp-msg { display: none; }
 #splash.ready .sp-tap { display: block; }

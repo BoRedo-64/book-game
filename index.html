@@ -27,8 +27,27 @@
       <div class="sp-bar"><i></i></div>
       <p class="sp-msg">Waking the monsters…</p>
       <button class="sp-tap" type="button">Tap to start</button>
+      <p class="sp-err"></p>
     </div>
   </div>
+  <script>
+    // Safety net: if the app code fails or stalls, never leave the splash stuck. Show the error and let a tap through.
+    (function () {
+      var sp = document.getElementById('splash');
+      window.splashBail = function (err) {
+        if (!sp || !sp.parentNode) return;
+        if (err) sp.querySelector('.sp-err').textContent = String(err && err.message || err).slice(0, 160);
+        sp.classList.add('ready');
+        sp.onclick = function () {
+          sp.classList.add('out'); document.body.classList.remove('splashing');
+          setTimeout(function () { if (sp.parentNode) sp.remove(); }, 550);
+        };
+      };
+      window.addEventListener('error', function (e) { window.splashBail(e.error || e.message); });
+      window.addEventListener('unhandledrejection', function (e) { window.splashBail(e.reason); });
+      setTimeout(function () { window.splashBail(); }, 15000);
+    })();
+  </script>
   <div id="app"></div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="vendor/supabase.js"></script>

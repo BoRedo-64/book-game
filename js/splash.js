@@ -8,8 +8,11 @@ const el = document.getElementById('splash');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MSGS = ['Waking the monsters…', 'Dusting off the books…', 'Tuning the music…', 'Counting pages…'];
 
-export async function runSplash(boot) {
-  if (!el) return;
+export function runSplash(boot) {
+  if (el) run(boot).catch((e) => { console.error(e); window.splashBail?.(e); });
+}
+
+async function run(boot) {
   const bar = el.querySelector('.sp-bar i'), msg = el.querySelector('.sp-msg');
   let pct = 6, m = 0;
   const bump = (n) => { pct = Math.min(100, pct + n); bar.style.width = `${pct}%`; };
@@ -17,7 +20,7 @@ export async function runSplash(boot) {
   const step = (p, n) => Promise.resolve(p).finally(() => bump(n));
 
   await Promise.allSettled([
-    step(boot, 45),
+    step(Promise.race([boot, sleep(10000)]), 45), // a hung network call must not trap the splash
     step(Promise.race([Audio.ready, sleep(8000)]), 40), // never let slow audio block the app
     sleep(1200), // long enough to see it, short enough not to annoy
   ]);

@@ -437,5 +437,5 @@ runSplash((async function boot() {
     S.auth.error = e.message;
   }
   S.ready = true;
-  render();
+  try { render(); } catch (e) { console.error(e); window.splashBail?.(e); }
 })());
