@@ -4,6 +4,7 @@ import { view, h, COIN, ENERGY } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
 import * as Audio from './audio.js';
+import { runSplash } from './splash.js';
 
 const root = document.getElementById('app');
 const toastEl = document.getElementById('toast');
@@ -426,7 +427,7 @@ document.addEventListener('submit', (e) => {
 document.addEventListener('input', (e) => { if (e.target.id === 'lg-page') updateGain(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshIfStale(60000); });
 
-(async function boot() {
+runSplash((async function boot() {
   render();
   try {
     const pid = await db.init();
@@ -437,4 +438,4 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refr
   }
   S.ready = true;
   render();
-})();
+})());

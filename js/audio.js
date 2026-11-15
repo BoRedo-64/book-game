@@ -91,7 +91,10 @@ export function setPref(kind, on) {
 // Download + decode the home music and jingles straight away (decoding works before
 // the unlock), so the first tap can start the music instantly instead of after a
 // 1.3 MB download. The battle theme follows once the app is unlocked.
-if (ctx) ['home', 'evolve', 'level'].forEach((n) => load(n).catch(() => {}));
+export const ready = ctx ? Promise.allSettled(['home', 'evolve', 'level'].map(load)) : Promise.resolve();
+
+/** True while the browser still needs a tap before music can play. */
+export const needsTap = () => !!ctx && ctx.state !== 'running' && prefs.music;
 
 // Unlock on the first user gesture, then preload the rest quietly.
 function unlock() {
