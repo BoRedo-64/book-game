@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -70,7 +70,7 @@ function starterView() {
     <div class="starters">${Object.entries(ELEMENTS).map(([k, e]) => `
       <button class="starter-card el-${k} ${pick === k ? 'on' : ''}" data-a="pickStarter" data-el="${k}">
         <img src="${monsterImg(k, 0)}" alt="${e.name} egg">
-        <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${ELEMENTS[e.beats].name}</small></div>
+        <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${ELEMENTS[e.beats].name}</small><small class="perk">✨ ${e.perk.name}: ${perkText(k)}</small></div>
       </button>`).join('')}</div>
     <form data-form="starter" class="stack">
       <input id="st-name" placeholder="Name your monster" maxlength="20" value="${h(S.starter.name)}" required>
@@ -183,6 +183,7 @@ function battleTab() {
       ${monImg(mon)}
       <div><h3>${h(mon.name)} <small>Lv ${me.level}</small></h3>
         <p class="muted">${egg ? 'Eggs can’t fight. Hatch it first!' : `❤️ ${me.maxHp} HP · ⚔️ ${me.atk} ATK`}</p>
+        ${egg ? '' : `<p class="perk">✨ <b>${ELEMENTS[mon.element].perk.name}</b> · ${perkText(mon.element)}</p>`}
         <p>${lg.icon} ${lg.name} league · ${fmt(S.me.trophies)} trophies</p>
         <div class="pips" aria-label="${S.me.energy} of ${MAX_ENERGY} energy">${ENERGY} ${pips}</div>
       </div>
@@ -465,7 +466,7 @@ const SHOP = [
   {
     id: 'monsters', name: 'Monsters', icon: '🥚', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
     items: () => Object.keys(ELEMENTS).filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
-      { name: `${ELEMENTS[e].name} egg`, desc: ELEMENTS[e].blurb, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
+      { name: `${ELEMENTS[e].name} egg`, desc: `${ELEMENTS[e].perk.name}: ${perkText(e)}`, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
         price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' })),
   },
   {
@@ -550,12 +551,15 @@ function partyView(p) {
 
 function battleView(b) {
   const side = (f, who) => `<div class="b-side ${who} ${b.anim?.[who] || ''}">
-      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
+      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
       <div class="b-mon"><img src="${monsterImg(f.element, f.stage)}" alt="">${b.pop?.[who] ? `<span class="pop ${b.pop[who].cls}">${b.pop[who].text}</span>` : ''}</div></div>`;
   const moves = Object.entries(MOVES).map(([k, m]) => {
     const cd = k === 'blast' ? b.me.cd : 0;
     const label = k === 'blast' ? ELEMENTS[b.me.element].blast : m.name;
-    return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : m.desc}</small></button>`;
+    const p = ELEMENTS[b.me.element].perk;
+    const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : m.desc)
+      : k === 'guard' && p.healMult ? 'Block + big heal' : m.desc;
+    return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;
   }).join('');
   const over = b.over && `<div class="b-over ${b.over.won ? 'won' : ''}"><h1>${b.over.won ? 'Victory!' : 'Defeated'}</h1>
       <p>${b.over.won ? `+${b.over.coins} ${COIN} · +${b.over.trophies} 🏆` : `${b.over.coins ? `+${b.over.coins} ${COIN} · ` : ''}${b.over.trophies ? `${b.over.trophies} 🏆 · ` : ''}Read more pages to grow stronger.`}</p>

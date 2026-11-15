@@ -109,11 +109,18 @@ function updateGain() {
 
 // ---------- battle ----------
 function step(bt, who, move) {
-  const other = who === 'me' ? 'foe' : 'me';
-  const r = G.applyMove(bt[who], bt[other], move);
-  bt.log = r.text;
+  const other = who === 'me' ? 'foe' : 'me', a = bt[who];
+  const burned = G.burnTick(a);
+  if (burned && a.hp <= 0) { // burned out before it could act
+    bt.log = `${a.name} was overcome by the burn! −${burned}`;
+    bt.anim = { [who]: 'hit' }; bt.pop = { [who]: { text: `−${burned}`, cls: 'burn' } };
+    return render();
+  }
+  const r = G.applyMove(a, bt[other], move);
+  bt.log = (burned ? `${a.name} is hurt by the burn (−${burned}). ` : '') + r.text;
   bt.anim = { [who]: move === 'guard' ? 'guarding' : 'lunge', [other]: r.dmg ? 'hit' : '' };
   bt.pop = r.dmg ? { [other]: { text: `−${r.dmg}`, cls: r.crit ? 'crit' : '' } } : { [who]: { text: `+${r.heal}`, cls: 'heal' } };
+  if (burned && !bt.pop[who]) bt.pop[who] = { text: `−${burned}`, cls: 'burn' };
   render();
 }
 
@@ -315,9 +322,11 @@ const A = {
     b.busy = true;
     step(b, 'me', d.m);
     await sleep(1000);
+    if (b.me.hp <= 0) return endBattle(false);
     if (b.foe.hp <= 0) return endBattle(true);
     step(b, 'foe', G.aiMove(b.foe, b.me));
     await sleep(1000);
+    if (b.foe.hp <= 0) return endBattle(true);
     if (b.me.hp <= 0) return endBattle(false);
     b.busy = false; b.anim = {}; b.pop = {};
     render();

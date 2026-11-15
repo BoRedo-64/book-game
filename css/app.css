@@ -397,3 +397,8 @@ body.splashing { overflow: hidden; }
 .sitem-art.hab img { max-height: 70px; margin-bottom: 6px; }
 .sitem-art[class*='el-']:not(.hab) { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--el) 45%, transparent), #2a2160 70%); }
 .sart { font-size: 48px; line-height: 1; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .4)); }
+
+/* ---------- family perks ---------- */
+.perk { color: var(--el-soft); font-size: 13px; }
+.burnbadge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; background: rgba(255, 122, 47, .22); color: #ffb37a; font-size: 12px; font-weight: 800; animation: pop .3s; }
+.pop.burn { color: #ffb37a; text-shadow: 0 2px 0 #8a2a00, 0 0 12px #ff7a2f; }
