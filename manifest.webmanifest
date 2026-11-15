@@ -1,0 +1,14 @@
+{
+  "name": "Pagelings",
+  "short_name": "Pagelings",
+  "description": "Read pages, raise a monster, out-read your friends.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#171133",
+  "theme_color": "#171133",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
