@@ -307,7 +307,7 @@ const A = {
       const f = S.people[d.id];
       foe = G.fighter(monsterOf(f)); owner = f.username;
     } else {
-      const el = Object.keys(G.ELEMENTS)[Math.floor(Math.random() * 3)];
+      const el = G.STARTERS[Math.floor(Math.random() * G.STARTERS.length)];
       const xp = G.xpForLevel(Math.max(1, me.level + Math.floor(Math.random() * 4) - 2));
       foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp });
     }

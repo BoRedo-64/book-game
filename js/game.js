@@ -19,7 +19,16 @@ export const ELEMENTS = {
     blurb: 'Patient and loyal. Grows a little with every page.',
     perk: { name: 'Regrowth', healMult: 1.75 }, // guard heals more
   },
+  // Hybrid of fire + water. Not a starter: how it's obtained and its perk are still to come.
+  tornado: {
+    name: 'Tornado', emoji: '🌪️', beats: null, blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
+    stages: ['Gale Egg', 'Whirlet', 'Cyclonyx', 'Tempestor'],
+    blurb: 'Born where fire meets water. Restless as a page-turner.',
+    perk: {},
+  },
 };
+/** Families you can pick at the start, buy as eggs and meet in the wild. */
+export const STARTERS = Object.keys(ELEMENTS).filter((k) => ELEMENTS[k].starter !== false);
 
 export const HATCH_PAGES = 30;
 export const EVOLVE_1 = 10;

@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -68,7 +68,7 @@ function starterView() {
   return `<main class="starter">
     <h1>Choose your egg</h1>
     <p class="muted">It hatches after ${HATCH_PAGES} pages of reading.</p>
-    <div class="starters">${Object.entries(ELEMENTS).map(([k, e]) => `
+    <div class="starters">${STARTERS.map((k) => [k, ELEMENTS[k]]).map(([k, e]) => `
       <button class="starter-card el-${k} ${pick === k ? 'on' : ''}" data-a="pickStarter" data-el="${k}">
         <img src="${monsterImg(k, 0)}" alt="${e.name} egg">
         <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${ELEMENTS[e.beats].name}</small><small class="perk">✨ ${e.perk.name}: ${perkText(k)}</small></div>
@@ -476,7 +476,7 @@ const SHOP = [
   },
   {
     id: 'monsters', name: 'Monsters', icon: '🥚', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
-    items: () => Object.keys(ELEMENTS).filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
+    items: () => STARTERS.filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
       { name: `${ELEMENTS[e].name} egg`, desc: `${ELEMENTS[e].perk.name}: ${perkText(e)}`, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
         price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' })),
   },

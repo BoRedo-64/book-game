@@ -42,7 +42,7 @@ create table if not exists public.devices (
 create table if not exists public.monsters (
   id uuid primary key default gen_random_uuid(),
   owner uuid not null references public.profiles on delete cascade,
-  element text not null check (element in ('fire', 'water', 'plant')),
+  element text not null check (element in ('fire', 'water', 'plant', 'tornado')),
   name text not null check (char_length(name) between 1 and 20),
   xp int not null default 0,
   created_at timestamptz not null default now()

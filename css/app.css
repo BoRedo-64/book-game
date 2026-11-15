@@ -8,6 +8,7 @@
 .el-fire, body[data-el='fire'] { --el: #ff7a2f; --el-d: #c2480c; --el-soft: #ffb37a; }
 .el-water, body[data-el='water'] { --el: #3d9dff; --el-d: #1a62c4; --el-soft: #9fd0ff; }
 .el-plant, body[data-el='plant'] { --el: #5fc43c; --el-d: #2f861b; --el-soft: #b5e88f; }
+.el-tornado, body[data-el='tornado'] { --el: #7f8cff; --el-d: #4650c4; --el-soft: #cdd5ff; }
 
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 html { background: #0e0a22; touch-action: manipulation; } /* no double-tap zoom; pinch-zoom still works */
