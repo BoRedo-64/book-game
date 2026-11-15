@@ -16,6 +16,11 @@ body {
   min-height: 100dvh; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased;
 }
 body.locked { overflow: hidden; }
+/* Solid bar under the iPhone status bar / Dynamic Island so content scrolls beneath it, not behind the clock. Zero height in a normal browser tab. */
+body::before {
+  content: ''; position: fixed; top: 0; left: 50%; translate: -50% 0; width: 100%; max-width: 440px; z-index: 25;
+  height: env(safe-area-inset-top); background: rgba(23, 17, 51, .92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
 #app {
   max-width: 440px; min-height: 100dvh; margin: 0 auto; position: relative; background: var(--bg);
   background-image: radial-gradient(120% 50% at 50% 0%, color-mix(in srgb, var(--el) 16%, transparent), transparent 70%);
@@ -57,7 +62,7 @@ label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px
 .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 
 /* ---------- layout ---------- */
-.screen { padding: 12px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom)); display: grid; gap: 14px; align-content: start; }
+.screen { padding: calc(12px + env(safe-area-inset-top)) 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom)); display: grid; gap: 14px; align-content: start; }
 .title { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; min-height: 48px; }
 .h { margin: 6px 2px -4px; display: flex; justify-content: space-between; align-items: baseline; }
 .card { background: var(--card); border-radius: var(--r); padding: 16px; border: 1px solid var(--line); display: block; width: 100%; }
@@ -109,7 +114,7 @@ label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px
 .chips button.on { background: var(--el); color: #fff; }
 
 /* ---------- auth + starter ---------- */
-.auth, .starter, .splash { min-height: 100dvh; padding: 28px 22px; display: grid; align-content: center; gap: 14px; text-align: center; }
+.auth, .starter, .splash { min-height: 100dvh; padding: calc(28px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom)); display: grid; align-content: center; gap: 14px; text-align: center; }
 .splash { place-items: center; color: var(--muted); } .splash img { width: 96px; border-radius: 24px; animation: bob 1.6s ease-in-out infinite; }
 .eggs { display: flex; justify-content: center; align-items: flex-end; height: 150px; }
 .eggs img { width: 104px; margin: 0 -8px; animation: bob 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * -.8s); filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .4)); }
@@ -277,9 +282,9 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
   background: hsl(calc(var(--c) * 70 + 20) 90% 62%); }
 
 /* ---------- battle ---------- */
-.battle { position: fixed; inset: 0; z-index: 40; max-width: 440px; margin: 0 auto; display: grid; grid-template-rows: 1fr 1fr auto auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+.battle { position: fixed; inset: 0; z-index: 40; max-width: 440px; margin: 0 auto; display: grid; grid-template-rows: 1fr 1fr auto auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
   background: radial-gradient(90% 40% at 50% 62%, color-mix(in srgb, var(--el) 35%, transparent), transparent 70%), linear-gradient(180deg, #231a55, #120c2b); animation: fade .25s; }
-.b-flee { position: absolute; top: 14px; left: 14px; z-index: 2; color: var(--muted); font-size: 13px; padding: 6px 10px; }
+.b-flee { position: absolute; top: calc(14px + env(safe-area-inset-top)); left: 14px; z-index: 2; color: var(--muted); font-size: 13px; padding: 6px 10px; }
 .b-side { display: flex; align-items: center; gap: 8px; min-height: 0; }
 .b-side.foe { flex-direction: row; justify-content: flex-end; padding-top: 22px; } .b-side.me { flex-direction: row-reverse; justify-content: flex-end; }
 .b-card { flex: 1; background: rgba(15, 10, 40, .78); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; max-width: 190px; backdrop-filter: blur(6px); }
