@@ -1,6 +1,6 @@
 // Boot, event wiring and every action the player can take.
 import { S, active, person, monsterOf, loadAll, daily, quests, raid, duelView, today } from './state.js';
-import { view, h } from './views.js';
+import { view, h, COIN } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
 
@@ -84,14 +84,14 @@ async function logReading(book, page) {
 
   S.sheet = finished ? { s: 'book', id: book.id } : null;
   render();
-  toast(`+${xp} XP · +${coins} 🪙${gainedEnergy ? ` · +${gainedEnergy} ⚡` : ''}`);
+  toast(`+${xp} XP · +${coins} ${COIN}${gainedEnergy ? ` · +${gainedEnergy} ⚡` : ''}`);
 }
 
 function updateGain() {
   const input = document.getElementById('lg-page'), out = document.getElementById('lg-gain');
   if (!input || !out) return;
   const pages = clamp(parseInt(input.value, 10) || 0, +input.dataset.from, +input.dataset.max) - input.dataset.from;
-  out.textContent = pages > 0 ? `+${pages} pages read → +${pages} XP · +${Math.floor(pages / 2)} 🪙` : 'Tap + to add the pages you read';
+  out.innerHTML = pages > 0 ? `+${pages} pages read → +${pages} XP · +${Math.floor(pages / 2)} ${COIN}` : 'Tap + to add the pages you read';
   out.classList.toggle('on', pages > 0);
 }
 
@@ -200,13 +200,13 @@ const A = {
     const dl = daily();
     dl.claimed.push(q.id);
     await saveMe({ coins: S.me.coins + q.reward, state: { ...S.me.state, daily: dl } });
-    render(); toast(`Quest complete! +${q.reward} 🪙`);
+    render(); toast(`Quest complete! +${q.reward} ${COIN}`);
   },
   async raidClaim() {
     const r = raid();
     if (!r.dead || r.claimed || !r.mine) return;
     await saveMe({ coins: S.me.coins + r.reward, freezes: Math.min(2, S.me.freezes + 1), state: { ...S.me.state, raid: r.week } });
-    render(); toast(`${h(r.name)} is beaten! +${r.reward} 🪙 and a streak freeze`);
+    render(); toast(`${h(r.name)} is beaten! +${r.reward} ${COIN} and a streak freeze`);
   },
 
   async cheer(d) {
@@ -257,7 +257,7 @@ const A = {
     Object.assign(duel, await db.update('duels', duel.id, { [v.mine ? 'claimed_c' : 'claimed_o']: true }));
     if (prize) await saveMe({ coins: S.me.coins + prize });
     render();
-    if (prize) toast(`+${prize} 🪙`);
+    if (prize) toast(`+${prize} ${COIN}`);
   },
 
   async buy(d) {
