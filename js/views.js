@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -204,7 +204,7 @@ function battleTab() {
     <h3 class="h">Opponents</h3>
     <section class="card list">
       <div class="row"><span class="avatar wild">🌀</span>
-        <div><b>Wild encounter</b><small>A random monster near your level</small></div>
+        <div><b>Wild encounter</b><small>A random monster near your level${isHybrid(mon.element) ? ` · ✨ rare monsters ${Math.round(RARE_WILD_CHANCE_HYBRID / RARE_WILD_CHANCE)}× more likely with ${h(mon.name)}` : ''}</small></div>
         <button class="btn primary sm" data-a="fight" ${can ? '' : 'disabled'}>Fight</button></div>
       ${S.friends.map((f) => {
         const fm = monsterOf(f); if (!fm) return '';

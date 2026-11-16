@@ -310,8 +310,9 @@ const A = {
       const f = S.people[d.id];
       foe = G.fighter(monsterOf(f)); owner = f.username;
     } else {
-      // Hybrids are rare: each has a 1% chance to show up instead of a normal wild monster.
-      const rare = Object.keys(G.ELEMENTS).filter((k) => !G.STARTERS.includes(k)).find(() => Math.random() < G.RARE_WILD_CHANCE);
+      // Hybrids are rare: each has a 1% chance to show up (3% if you're fighting with a hybrid yourself).
+      const chance = G.rareChance(me.element);
+      const rare = Object.keys(G.ELEMENTS).filter(G.isHybrid).find(() => Math.random() < chance);
       const el = rare || G.STARTERS[Math.floor(Math.random() * G.STARTERS.length)];
       const xp = G.xpForLevel(Math.max(1, me.level + Math.floor(Math.random() * 4) - 2));
       foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp }, { rare: !!rare });
