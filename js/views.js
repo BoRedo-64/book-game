@@ -381,6 +381,12 @@ function fusionCard(k) {
     ${owned ? '' : `<button class="btn ${ready ? 'gold' : 'ghost'} wide" data-a="sheet" data-s="fuse" data-el="${k}" ${ready ? '' : 'disabled'}>${ready ? '🧬 Fuse!' : '🔒 Locked'}</button>`}
   </section>`;
 }
+// Fusions stay secret until you can do one; after that, bred hybrids stay listed.
+function fusionSection() {
+  const ready = fusable(S.monsters), shown = HYBRIDS.filter((k) => ready.includes(k) || S.monsters.some((m) => m.element === k));
+  if (!shown.length) return '';
+  return `<h3 class="h">🧬 Fusion</h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
+}
 function fusionBanner() {
   const k = fusable(S.monsters)[0];
   if (!k) return '';
@@ -421,8 +427,7 @@ function meView() {
     </section>
     <button class="btn gold wide" data-a="go" data-tab="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
-    <h3 class="h">🧬 Fusion <small>${HYBRIDS.filter((k) => S.monsters.some((m) => m.element === k)).length} / ${HYBRIDS.length}</small></h3>
-    <section class="fusions">${HYBRIDS.map(fusionCard).join('')}</section>
+    ${fusionSection()}
     <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
     <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
@@ -523,11 +528,10 @@ const SHOP = [
     items: () => STARTERS.filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
       { name: `${ELEMENTS[e].name} egg`, desc: `${ELEMENTS[e].perk.name}: ${perkText(e)}`, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
         price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' }))
-      .concat(HYBRIDS.filter((k) => !S.monsters.some((m) => m.element === k)).map((k) => {
-        const e = ELEMENTS[k], ready = fusable(S.monsters).includes(k);
-        return { name: ready ? `${e.name} egg` : 'Mystery egg', desc: `Can't be bought. Breed it from ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')} at Lv ${EVOLVE_2}.`,
-          art: `<img src="${monsterImg(k, 0)}" alt="" class="${ready ? '' : 'silhouette'}">`, artCls: `el-${k}`,
-          action: 'sheet', attrs: `data-s="fuse" data-el="${k}"`, status: ready ? 'fuse' : 'locked' };
+      .concat(fusable(S.monsters).map((k) => {
+        const e = ELEMENTS[k];
+        return { name: `${e.name} egg`, desc: `Can't be bought. Breed it from your ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')}.`,
+          art: `<img src="${monsterImg(k, 0)}" alt="">`, artCls: `el-${k}`, action: 'sheet', attrs: `data-s="fuse" data-el="${k}"`, status: 'fuse' };
       })),
   },
   {
