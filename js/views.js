@@ -194,7 +194,7 @@ function battleTab() {
             <span class="fcard-box">⚔️ <b>${me.atk}</b> ATK</span>
           </div>
           <div class="fcard-box fcard-perk"><span class="hexa">${el.emoji}</span>
-            <p><b>${perk.name}</b> <small>· ${perk.healMult ? 'Guard' : el.blast}</small><br><span>${perkText(mon.element, false)}</span></p></div>`}
+            <p><b>${perk.name}</b> <small>· ${perk.healMult || perk.immuneGuard ? 'Guard' : el.blast}</small><br><span>${perkText(mon.element, false)}</span></p></div>`}
           <div class="fcard-box fcard-league">${lg.icon} ${lg.name} league <i>·</i> 🏆 ${fmt(S.me.trophies)}</div>
           <div class="fcard-energy" aria-label="${S.me.energy} of ${MAX_ENERGY} energy"><span class="orb">${ENERGY}</span>${pips}</div>
         </div>
@@ -421,7 +421,8 @@ function meView() {
     </section>
     <button class="btn gold wide" data-a="go" data-tab="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
-    ${HYBRIDS.map((k) => `<h3 class="h">🧬 Fusion</h3>${fusionCard(k)}`).join('')}
+    <h3 class="h">🧬 Fusion <small>${HYBRIDS.filter((k) => S.monsters.some((m) => m.element === k)).length} / ${HYBRIDS.length}</small></h3>
+    <section class="fusions">${HYBRIDS.map(fusionCard).join('')}</section>
     <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
     <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
@@ -615,14 +616,15 @@ function partyView(p) {
 
 function battleView(b) {
   const side = (f, who) => `<div class="b-side ${who} ${b.anim?.[who] || ''}">
-      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${f.shock ? '<span class="burnbadge shockbadge" title="Electrocuted">⚡ shocked</span>' : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
+      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${f.shock ? '<span class="burnbadge shockbadge" title="Electrocuted">⚡ shocked</span>' : ''}${f.poison ? `<span class="burnbadge poisonbadge" title="Poisoned">🍄 ${f.poison.turns}</span>` : ''}${f.guard && f.immune ? '<span class="burnbadge stonebadge" title="Stoneskin">🪨 stone</span>' : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
       <div class="b-mon"><img src="${monsterImg(f.element, f.stage)}" alt="">${b.pop?.[who] ? `<span class="pop ${b.pop[who].cls}">${b.pop[who].text}</span>` : ''}</div></div>`;
   const moves = Object.entries(MOVES).map(([k, m]) => {
     const cd = k === 'blast' ? b.me.cd : 0;
     const label = k === 'blast' ? ELEMENTS[b.me.element].blast : m.name;
     const p = ELEMENTS[b.me.element].perk;
-    const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : p.shockTurns ? 'Big hit + shock' : m.desc)
+    const desc = k === 'blast' ? (p.burnTurns ? 'Big hit + burn' : p.cooldown ? 'Big hit, fast recharge' : p.shockTurns ? 'Big hit + shock' : p.poisonTurns ? 'Big hit + poison' : m.desc)
       : k === 'guard' && b.me.guardRun ? `Heal ${Math.round(guardFactor(b.me) * 100)}% (tired)`
+      : k === 'guard' && p.immuneGuard ? 'Block ALL + big heal'
       : k === 'guard' && p.healMult ? 'Block + big heal' : m.desc;
     return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;
   }).join('');

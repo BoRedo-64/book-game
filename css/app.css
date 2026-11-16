@@ -494,3 +494,11 @@ body.splashing { overflow: hidden; }
 .pop.miss { color: #cdd5ff; text-shadow: 0 2px 0 #2a2f7a, 0 0 12px #7f8cff; font-size: 24px; }
 .shockbadge { background: rgba(127, 140, 255, .25); color: #cdd5ff; }
 @media (prefers-reduced-motion: reduce) { .fz-p, .fz-vortex { display: none; } .fz-egg { animation: none; opacity: 1; } }
+
+/* ---------- rock + poison ---------- */
+.el-rock, body[data-el='rock'] { --el: #d08a32; --el-d: #7d4e18; --el-soft: #ffd08a; }
+.el-poison, body[data-el='poison'] { --el: #a855f7; --el-d: #6b21a8; --el-soft: #d4ff5c; }
+.fusions { display: grid; gap: 10px; }
+.poisonbadge { background: rgba(168, 85, 247, .25); color: #d4ff5c; }
+.stonebadge { background: rgba(208, 138, 50, .25); color: #ffd08a; }
+.pop.poison { color: #d4ff5c; text-shadow: 0 2px 0 #4a1a7a, 0 0 12px #a855f7; }

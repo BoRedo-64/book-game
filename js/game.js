@@ -19,13 +19,27 @@ export const ELEMENTS = {
     blurb: 'Patient and loyal. Grows a little with every page.',
     perk: { name: 'Regrowth', healMult: 1.75 }, // guard heals more
   },
-  // Hybrid: bred from a final-stage fire + water (see canFuse). Strong vs fire and plant, weak to nothing,
-  // and +1% HP/ATK per level on top of normal growth.
+  // ---- Hybrids: bred from two final-stage parents (see fusable), +1% HP/ATK per level on top of normal
+  // growth. Each beats whatever its parents beat, and they form a cycle: rock > tornado > poison > rock.
   tornado: {
-    name: 'Tornado', emoji: '🌪️', beats: ['fire', 'plant'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
+    name: 'Tornado', emoji: '🌪️', beats: ['fire', 'plant', 'poison'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
     stages: ['Gale Egg', 'Whirlet', 'Cyclonyx', 'Tempestor'],
     blurb: 'Born where fire meets water. Restless as a page-turner.',
     perk: { name: 'Electrocute', shockTurns: 1, missChance: 0.4 }, // blast makes the foe's attacks miss
+    statBonus: 0.01,
+  },
+  rock: {
+    name: 'Rock', emoji: '🪨', beats: ['fire', 'water', 'tornado'], blast: 'Rockslide', starter: false, parents: ['water', 'plant'],
+    stages: ['Boulder Egg', 'Pebblit', 'Cragmaw', 'Titanstone'],
+    blurb: 'Where water wears down roots, stone is born. Slow, steady, unbreakable.',
+    perk: { name: 'Stoneskin', immuneGuard: true, healMult: 3 }, // first Guard in a row blocks ALL damage, big heal
+    statBonus: 0.01,
+  },
+  poison: {
+    name: 'Poison', emoji: '🍄', beats: ['plant', 'water', 'rock'], blast: 'Toxic Spores', starter: false, parents: ['fire', 'plant'],
+    stages: ['Spore Egg', 'Sporeling', 'Toxicap', 'Blightshroom'],
+    blurb: 'Grown in the ashes of a burnt forest. Its spores linger long after the hit.',
+    perk: { name: 'Venom', poisonTurns: 2, poisonPct: 0.04 }, // blast poisons the foe (% of its max HP per turn)
     statBonus: 0.01,
   },
 };
@@ -108,7 +122,7 @@ export function fighter(mon, extra = {}) {
   const { level, stage } = levelInfo(mon.xp);
   const boost = 1 + (ELEMENTS[mon.element].statBonus || 0) * level;
   const hp = Math.round((50 + level * 14) * boost);
-  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: Math.round((8 + level * 3) * boost), cd: 0, guard: false, guardRun: 0, burn: null, shock: null, ...extra };
+  return { name: mon.name, element: mon.element, level, stage, maxHp: hp, hp, atk: Math.round((8 + level * 3) * boost), cd: 0, guard: false, guardRun: 0, burn: null, poison: null, shock: null, immune: false, ...extra };
 }
 
 export function elementMult(a, b) {
@@ -126,8 +140,8 @@ const BASE_COOLDOWN = 2, BASE_HEAL = 0.12;
 export const blastCooldown = (el) => ELEMENTS[el].perk.cooldown ?? BASE_COOLDOWN;
 export const guardHeal = (el) => BASE_HEAL * (ELEMENTS[el].perk.healMult ?? 1);
 
-// Tuned with a battle simulator so each family wins ~50% across all match-ups
-// and each perk is worth about the same (~58% vs an identical monster with no perk).
+// Tuned with a battle simulator. Starter perks are worth about the same (~58% vs an identical
+// monster with no perk); hybrid perks are stronger and level with each other (~69-73%).
 
 /** Plain-language description of each family's battle perk. */
 export function perkText(el, withMove = true) {
@@ -136,6 +150,8 @@ export function perkText(el, withMove = true) {
   if (p.burnTurns) return cap(`${mv}burns the foe for ${p.burnTurns} turns, even through Guard.`);
   if (p.cooldown) return cap(`${mv}recharges in ${p.cooldown} turn instead of ${BASE_COOLDOWN}.`);
   if (p.shockTurns) return cap(`${mv}electrocutes the foe: ${Math.round(p.missChance * 100)}% chance its next ${p.shockTurns > 1 ? `${p.shockTurns} attacks miss` : 'attack misses'}.`);
+  if (p.poisonTurns) return cap(`${mv}poisons the foe for ${p.poisonTurns} turns (${Math.round(p.poisonPct * 100)}% of its max HP each turn), even through Guard.`);
+  if (p.immuneGuard) return `Your first Guard in a row blocks 100% of the damage and heals ${Math.round(guardHeal(el) * 100)}% of max HP.`;
   if (p.healMult) return `Guard heals ${Math.round((p.healMult - 1) * 100)}% more (${Math.round(guardHeal(el) * 100)}% of max HP).`;
   return '';
 }
@@ -143,13 +159,16 @@ export function perkText(el, withMove = true) {
 /** Heal multiplier for a's next Guard: 1, then ½, ¼… for each Guard in a row. */
 export const guardFactor = (a) => 0.5 ** (a.guardRun || 0);
 
-/** Burn damage at the start of a's turn. Returns the damage dealt (0 if not burning). */
-export function burnTick(a) {
-  if (!a.burn) return 0;
-  const dmg = Math.min(a.hp, a.burn.dmg);
-  a.hp -= dmg;
-  if (--a.burn.turns <= 0) a.burn = null;
-  return dmg;
+/** Damage-over-time at the start of a's turn (burn, poison). Returns { total, burn, poison }. */
+export function dotTick(a) {
+  const out = { total: 0, burn: 0, poison: 0 };
+  for (const k of ['burn', 'poison']) {
+    if (!a[k] || a.hp <= 0) continue;
+    const dmg = Math.min(a.hp, a[k].dmg);
+    a.hp -= dmg; out[k] = dmg; out.total += dmg;
+    if (--a[k].turns <= 0) a[k] = null;
+  }
+  return out;
 }
 
 export function applyMove(a, b, move) {
@@ -162,7 +181,8 @@ export function applyMove(a, b, move) {
     a.guardRun = (a.guardRun || 0) + 1;
     const heal = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * guardHeal(a.element) * tired));
     a.hp += heal; a.guard = true;
-    return { move, heal, dmg: 0, text: `${a.name} braces and recovers ${heal} HP.${tired < 1 ? ' (tiring…)' : ''}` };
+    a.immune = !!ELEMENTS[a.element].perk.immuneGuard && tired === 1; // Stoneskin: only a fresh Guard is unbreakable
+    return { move, heal, dmg: 0, text: `${a.name} ${a.immune ? 'turns to stone' : 'braces'} and recovers ${heal} HP.${tired < 1 ? ' (tiring…)' : ''}` };
   }
   a.guardRun = 0;
   const shocked = a.shock;
@@ -175,25 +195,31 @@ export function applyMove(a, b, move) {
   if (move === 'blast') { mult = elementMult(a.element, b.element); dmg *= 1.6 * mult; a.cd = blastCooldown(a.element); }
   const crit = Math.random() < 0.12;
   if (crit) dmg *= 1.5;
+  const immune = b.guard && b.immune;
   if (b.guard) dmg *= 0.35;
-  dmg = Math.max(1, Math.round(dmg));
+  dmg = immune ? 0 : Math.max(1, Math.round(dmg));
   b.hp = Math.max(0, b.hp - dmg);
   const name = move === 'blast' ? ELEMENTS[a.element].blast : 'Strike';
   let text = `${a.name} used ${name}! −${dmg}`;
   if (crit) text += ' Critical hit!';
   if (move === 'blast' && mult > 1) text += " It's super effective!";
   if (move === 'blast' && mult < 1) text += ' Not very effective…';
-  if (b.guard) text += ' (blocked)';
+  if (immune) text = `${a.name} used ${name}… but ${b.name}'s Stoneskin blocks everything!`;
+  else if (b.guard) text += ' (blocked)';
   const perk = ELEMENTS[a.element].perk;
   if (move === 'blast' && perk.burnTurns && b.hp > 0) {
     b.burn = { turns: perk.burnTurns, dmg: Math.max(1, Math.round(a.atk * perk.burnPct)) };
     text += ` ${b.name} is burning!`;
   }
+  if (move === 'blast' && perk.poisonTurns && b.hp > 0) {
+    b.poison = { turns: perk.poisonTurns, dmg: Math.max(1, Math.round(b.maxHp * perk.poisonPct)) };
+    text += ` ${b.name} is poisoned!`;
+  }
   if (move === 'blast' && perk.shockTurns && b.hp > 0) {
     b.shock = { turns: perk.shockTurns, miss: perk.missChance };
     text += ` ${b.name} is electrocuted!`;
   }
-  return { move, dmg, crit, mult, text };
+  return { move, dmg, crit, mult, text, blocked: immune };
 }
 export function aiMove(a, b) {
   if (a.cd === 0 && Math.random() < 0.65) return 'blast';

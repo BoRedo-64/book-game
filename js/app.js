@@ -110,18 +110,20 @@ function updateGain() {
 // ---------- battle ----------
 function step(bt, who, move) {
   const other = who === 'me' ? 'foe' : 'me', a = bt[who];
-  const burned = G.burnTick(a);
-  if (burned && a.hp <= 0) { // burned out before it could act
-    bt.log = `${a.name} was overcome by the burn! −${burned}`;
-    bt.anim = { [who]: 'hit' }; bt.pop = { [who]: { text: `−${burned}`, cls: 'burn' } };
+  const dot = G.dotTick(a), dotText = [dot.burn && `burn −${dot.burn}`, dot.poison && `poison −${dot.poison}`].filter(Boolean).join(', ');
+  const dotPop = dot.total ? { text: `−${dot.total}`, cls: dot.poison ? 'poison' : 'burn' } : null;
+  if (dot.total && a.hp <= 0) { // taken out by burn/poison before it could act
+    bt.log = `${a.name} was overcome (${dotText})!`;
+    bt.anim = { [who]: 'hit' }; bt.pop = { [who]: dotPop };
     return render();
   }
   const r = G.applyMove(a, bt[other], move);
-  bt.log = (burned ? `${a.name} is hurt by the burn (−${burned}). ` : '') + r.text;
+  bt.log = (dot.total ? `${a.name} is hurt (${dotText}). ` : '') + r.text;
   bt.anim = { [who]: move === 'guard' ? 'guarding' : 'lunge', [other]: r.dmg ? 'hit' : '' };
   bt.pop = r.miss ? { [who]: { text: 'Miss!', cls: 'miss' } }
+    : r.blocked ? { [other]: { text: 'Blocked!', cls: 'miss' } }
     : r.dmg ? { [other]: { text: `−${r.dmg}`, cls: r.crit ? 'crit' : '' } } : { [who]: { text: `+${r.heal}`, cls: 'heal' } };
-  if (burned && !bt.pop[who]) bt.pop[who] = { text: `−${burned}`, cls: 'burn' };
+  if (dotPop && !bt.pop[who]) bt.pop[who] = dotPop;
   render();
 }
 
