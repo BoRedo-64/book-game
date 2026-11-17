@@ -48,8 +48,8 @@ export function fusable(monsters) {
   return Object.entries(ELEMENTS).filter(([k, e]) => e.parents && !monsters.some((m) => m.element === k)
     && e.parents.every((p) => monsters.some((m) => m.element === p && levelInfo(m.xp).stage >= 3))).map(([k]) => k);
 }
-export const RARE_WILD_CHANCE = 0.01; // per hybrid, per wild battle
-export const RARE_WILD_CHANCE_HYBRID = 0.05; // ...when your own fighter is a hybrid (rare monsters attract each other)
+export const RARE_WILD_CHANCE = 1 / 50; // chance a wild battle is a rare hybrid (any of them)
+export const RARE_WILD_CHANCE_HYBRID = 1 / 4; // ...when your own fighter is a hybrid (rare monsters attract each other)
 export const isHybrid = (el) => !!ELEMENTS[el].parents;
 export const rareChance = (myEl) => (isHybrid(myEl) ? RARE_WILD_CHANCE_HYBRID : RARE_WILD_CHANCE);
 /** Families you can pick at the start, buy as eggs and meet in the wild. */

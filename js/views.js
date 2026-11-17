@@ -204,7 +204,7 @@ function battleTab() {
     <h3 class="h">Opponents</h3>
     <section class="card list">
       <div class="row"><span class="avatar wild">🌀</span>
-        <div><b>Wild encounter</b><small>A random monster near your level${isHybrid(mon.element) ? ` · ✨ rare monsters ${Math.round(RARE_WILD_CHANCE_HYBRID / RARE_WILD_CHANCE)}× more likely with ${h(mon.name)}` : ''}</small></div>
+        <div><b>Wild encounter</b><small>A random monster near your level${isHybrid(mon.element) ? ` · ✨ rare monsters show up 1 in ${Math.round(1 / RARE_WILD_CHANCE_HYBRID)} battles with ${h(mon.name)} (normally 1 in ${Math.round(1 / RARE_WILD_CHANCE)})` : ''}</small></div>
         <button class="btn primary sm" data-a="fight" ${can ? '' : 'disabled'}>Fight</button></div>
       ${S.friends.map((f) => {
         const fm = monsterOf(f); if (!fm) return '';

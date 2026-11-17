@@ -1,6 +1,6 @@
 // Offline shell: try the network first so updates show up straight away,
 // fall back to the last cached copy when offline. API calls are never cached.
-const CACHE = 'pagelings-2.0.4';
+const CACHE = 'pagelings-2.0.5';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(
