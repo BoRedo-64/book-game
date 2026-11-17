@@ -26,21 +26,21 @@ export const ELEMENTS = {
     stages: ['Gale Egg', 'Whirlet', 'Cyclonyx', 'Tempestor'],
     blurb: 'Born where fire meets water. Restless as a page-turner.',
     perk: { name: 'Electrocute', shockTurns: 1, missChance: 0.4 }, // blast makes the foe's attacks miss
-    statBonus: 0.01,
+    statBonus: 0.005,
   },
   rock: {
     name: 'Rock', emoji: '🪨', beats: ['fire', 'water', 'tornado'], blast: 'Rockslide', starter: false, parents: ['water', 'plant'],
     stages: ['Boulder Egg', 'Pebblit', 'Cragmaw', 'Titanstone'],
     blurb: 'Where water wears down roots, stone is born. Slow, steady, unbreakable.',
     perk: { name: 'Stoneskin', immuneGuard: true, healMult: 3 }, // first Guard in a row blocks ALL damage, big heal
-    statBonus: 0.01,
+    statBonus: 0.005,
   },
   poison: {
     name: 'Poison', emoji: '🍄', beats: ['plant', 'water', 'rock'], blast: 'Toxic Spores', starter: false, parents: ['fire', 'plant'],
     stages: ['Spore Egg', 'Sporeling', 'Toxicap', 'Blightshroom'],
     blurb: 'Grown in the ashes of a burnt forest. Its spores linger long after the hit.',
     perk: { name: 'Venom', poisonTurns: 2, poisonPct: 0.04 }, // blast poisons the foe (% of its max HP per turn)
-    statBonus: 0.01,
+    statBonus: 0.005,
   },
 };
 /** Hybrids `me` can breed right now: both parents owned at their final stage and no hybrid yet. */
