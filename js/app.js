@@ -1,5 +1,5 @@
 // Boot, event wiring and every action the player can take.
-import { S, active, person, monsterOf, loadAll, daily, quests, raid, duelView, today } from './state.js';
+import { S, active, person, monsterOf, loadAll, daily, foughtToday, quests, raid, duelView, today } from './state.js';
 import { view, h, COIN, ENERGY } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
@@ -129,7 +129,7 @@ function step(bt, who, move) {
 
 async function endBattle(won) {
   const b = S.battle, friend = !!b.defender;
-  const coins = won ? (friend ? 20 : 10) : friend ? 5 : 0;
+  const coins = won ? 10 : friend ? 5 : 0;
   const trophies = won ? (friend ? 15 : 5) : friend ? -Math.min(8, S.me.trophies) : 0;
   b.over = { won, coins, trophies }; b.busy = false; b.pop = {};
   b.anim = { [won ? 'foe' : 'me']: 'ko' };
@@ -285,7 +285,11 @@ const A = {
   async buy(d) {
     const st = S.me.state;
     if (d.item === 'freeze' && S.me.coins >= 60 && S.me.freezes < 2) await saveMe({ coins: S.me.coins - 60, freezes: S.me.freezes + 1 });
-    else if (d.item === 'energy' && S.me.coins >= 40) await saveMe({ coins: S.me.coins - 40, energy: G.MAX_ENERGY });
+    else if (d.item === 'energy' && S.me.coins >= 40) {
+      const dl = daily();
+      if (dl.refills >= 1) return toast('You already bought an energy drink today. Come back tomorrow!');
+      await saveMe({ coins: S.me.coins - 40, energy: G.MAX_ENERGY, state: { ...st, daily: { ...dl, refills: (dl.refills || 0) + 1 } } });
+    }
     else if (d.item === 'habitat' && S.me.coins >= G.HABITATS[d.id].price) {
       await saveMe({ coins: S.me.coins - G.HABITATS[d.id].price, habitat: d.id, state: { ...st, habitats: [...(st.habitats || []), d.id] } });
     } else return;
@@ -306,6 +310,7 @@ const A = {
     if (!me.level) return toast('Hatch your egg first!');
     if (S.me.energy < 1) return toast(`Out of energy. Read ${G.PAGES_PER_ENERGY} pages to charge ${ENERGY}`);
     let foe, owner = null;
+    if (d.id && foughtToday(d.id)) return toast('You already battled this friend today. Try again tomorrow!');
     if (d.id) {
       const f = S.people[d.id];
       foe = G.fighter(monsterOf(f)); owner = f.username;
@@ -317,7 +322,8 @@ const A = {
       const xp = G.xpForLevel(Math.max(1, me.level + Math.floor(Math.random() * 4) - 2));
       foe = G.fighter({ name: `Wild ${G.stageName(el, G.levelInfo(xp).stage)}`, element: el, xp }, { rare: !!rare });
     }
-    await saveMe({ energy: S.me.energy - 1 });
+    const dl = daily();
+    await saveMe({ energy: S.me.energy - 1, ...(d.id && { state: { ...S.me.state, daily: { ...dl, fought: [...(dl.fought || []), d.id] } } }) });
     S.sheet = null;
     S.battle = { me, foe, owner, defender: d.id || null, log: foe.rare ? `${G.ELEMENTS[foe.element].emoji} A rare ${foe.name} appeared! Only 1 in 100 wild battles…` : `${owner ? `${owner}’s ${foe.name}` : foe.name} is ready to fight!`, busy: false, over: null, anim: {}, pop: {} };
     render();

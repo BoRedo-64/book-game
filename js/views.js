@@ -1,7 +1,7 @@
 // All screens, rendered as HTML strings from state.
 import {
   S, active, person, nameOf, monsterOf, pagesToday, weekPages, streak, quests, raid, ranking,
-  achievements, duelView, badges, today,
+  achievements, duelView, badges, today, daily, foughtToday,
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
@@ -211,7 +211,7 @@ function battleTab() {
         const fi = levelInfo(fm.xp);
         return `<div class="row">${avatar(f)}
           <div><b>${h(f.username)}</b><small>${h(fm.name)} · ${fi.level ? `Lv ${fi.level} ${stageName(fm.element, fi.stage)}` : 'still an egg'}</small>${fi.level && !egg ? matchup(mon.element, fm.element) : ''}</div>
-          <button class="btn primary sm" data-a="fight" data-id="${f.id}" ${can && fi.level ? '' : 'disabled'}>Fight</button></div>`;
+          <button class="btn primary sm" data-a="fight" data-id="${f.id}" ${can && fi.level && !foughtToday(f.id) ? '' : 'disabled'}>${foughtToday(f.id) ? 'Tomorrow' : 'Fight'}</button></div>`;
       }).join('')}
     </section>
     ${S.battles.length ? `<h3 class="h">Battle log</h3><section class="card list">${S.battles.map((b) => {
@@ -495,7 +495,7 @@ function friendSheet(s) {
       <div><b>${f.books_done}</b><small>books</small></div><div><b>${lg.icon}</b><small>${lg.name}</small></div></section>
     <p class="hint">This week: <b>${fmt(weekPages(f.id))}</b> pages (you: ${fmt(weekPages(S.me.id))})</p>
     ${s.books?.length ? `<h3 class="h">Reading now</h3>${s.books.map((b) => `<div class="row">${cover(b, 'sm')}<div><b>${h(b.title)}</b><small>${h(b.author)} · ${Math.round(pct(b.current_page, b.total_pages))}%</small></div></div>`).join('')}` : ''}
-    <div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level ? '' : 'disabled'}>⚔️ Battle</button>
+    <div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>⚔️ ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
       <button class="btn gold" data-a="sheet" data-s="newduel" data-id="${f.id}">🏁 Duel</button></div>
     <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>`;
 }
@@ -512,15 +512,15 @@ function newDuelSheet(s) {
 // ---------- shop ----------
 // The catalog. To add an item, add an entry to a category's items(); to add a
 // category, add an object here. Each item: { name, desc, art, price, action, attrs, status }
-// status: '' (buyable), 'full', 'owned', 'on' (owned and in use). Buying is handled by A.buy in app.js.
+// status: '' (buyable), 'full', 'owned', 'on' (owned and in use), 'done' (daily limit reached). Buying is handled by A.buy in app.js.
 const SHOP = [
   {
     id: 'boosts', name: 'Boosts', icon: '⚡', blurb: 'A helping hand for busy reading days.',
     items: () => [
       { name: 'Streak freeze', desc: `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, art: '<span class="sart">❄️</span>',
         price: 60, action: 'buy', attrs: 'data-item="freeze"', status: S.me.freezes >= 2 ? 'full' : '' },
-      { name: 'Energy drink', desc: `Refills battle energy to full (${S.me.energy}/${MAX_ENERGY} now).`, art: `<img src="assets/energy.webp" alt="">`,
-        price: 40, action: 'buy', attrs: 'data-item="energy"', status: S.me.energy >= MAX_ENERGY ? 'full' : '' },
+      { name: 'Energy drink', desc: `Refills battle energy to full (${S.me.energy}/${MAX_ENERGY} now). One per day.`, art: `<img src="assets/energy.webp" alt="">`,
+        price: 40, action: 'buy', attrs: 'data-item="energy"', status: daily().refills >= 1 ? 'done' : S.me.energy >= MAX_ENERGY ? 'full' : '' },
     ],
   },
   {
@@ -547,8 +547,8 @@ const SHOP = [
 ];
 
 function shopItem(it) {
-  const label = { full: 'Full', on: 'In use', owned: 'Use', fuse: '🧬 Fuse', locked: '🔒 Locked' }[it.status] || `${it.price} ${COIN}`;
-  const off = ['full', 'on', 'locked'].includes(it.status) || (!it.status && it.price > S.me.coins);
+  const label = { full: 'Full', on: 'In use', owned: 'Use', fuse: '🧬 Fuse', locked: '🔒 Locked', done: 'Tomorrow' }[it.status] || `${it.price} ${COIN}`;
+  const off = ['full', 'on', 'locked', 'done'].includes(it.status) || (!it.status && it.price > S.me.coins);
   return `<div class="sitem ${it.status}">
     <div class="sitem-art ${it.artCls || ''}">${it.art}</div>
     <b>${h(it.name)}</b><small>${h(it.desc)}</small>

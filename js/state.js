@@ -31,9 +31,11 @@ export const pagesToday = () => pagesBetween(S.me.id, today(), today());
 export const weekPages = (uid) => pagesBetween(uid, weekStart());
 export const streak = () => liveStreak(S.me);
 
+export const foughtToday = (id) => (daily().fought || []).includes(id);
+
 export function daily() {
   const d = S.me.state.daily;
-  return d && d.day === today() ? d : { day: today(), wins: 0, cheers: 0, claimed: [] };
+  return d && d.day === today() ? d : { day: today(), wins: 0, cheers: 0, claimed: [], fought: [], refills: 0 };
 }
 
 export function quests() {
