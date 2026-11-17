@@ -19,7 +19,7 @@ export const ELEMENTS = {
     blurb: 'Patient and loyal. Grows a little with every page.',
     perk: { name: 'Regrowth', healMult: 1.75 }, // guard heals more
   },
-  // ---- Hybrids: bred from two final-stage parents (see fusable), +1% HP/ATK per level on top of normal
+  // ---- Hybrids: bred from two final-stage parents (see fusable), +0.5% HP/ATK per level on top of normal
   // growth. Each beats whatever its parents beat, and they form a cycle: rock > tornado > poison > rock.
   tornado: {
     name: 'Tornado', emoji: '🌪️', beats: ['fire', 'plant', 'poison'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
@@ -288,4 +288,5 @@ export const ACHIEVEMENTS = [
   { id: 'w25', icon: '🏆', name: 'Champion', desc: 'Win 25 battles', test: (c) => c.wins >= 25 },
   { id: 'f3', icon: '🤝', name: 'Book club', desc: 'Have 3 friends', test: (c) => c.friends >= 3 },
   { id: 'col', icon: '🥚', name: 'Collector', desc: 'Raise all three elements', test: (c) => c.elements >= 3 },
+  { id: 'all', icon: '👑', name: 'Monster master', desc: 'Raise every monster to its final form', test: (c) => c.allFinal },
 ];

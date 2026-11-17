@@ -1,7 +1,7 @@
 // Shared app state + values derived from it.
 import { db } from './db.js';
 import {
-  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS,
+  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS, ELEMENTS,
 } from './game.js';
 
 export const S = {
@@ -76,6 +76,8 @@ export function achievements() {
     maxLevel: Math.max(0, ...S.monsters.map((m) => levelInfo(m.xp).level)),
     pages: S.me.total_pages, books: S.me.books_done, bestStreak: S.me.best_streak, wins: S.me.wins,
     friends: S.friends.length, elements: new Set(S.monsters.map((m) => m.element)).size,
+    // every family (hybrids included) owned at its final stage
+    allFinal: Object.keys(ELEMENTS).every((el) => S.monsters.some((m) => m.element === el && levelInfo(m.xp).stage >= 3)),
   };
   return ACHIEVEMENTS.map((a) => ({ ...a, got: a.test(ctx) }));
 }
