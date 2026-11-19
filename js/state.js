@@ -1,7 +1,7 @@
 // Shared app state + values derived from it.
 import { db } from './db.js';
 import {
-  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS, ELEMENTS,
+  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS, ELEMENTS, DAILY_PAGE_LIMIT,
 } from './game.js';
 
 export const S = {
@@ -10,7 +10,7 @@ export const S = {
   friends: [], incoming: [], outgoing: [], ships: [], fmon: {}, flogs: [],
   events: [], cheers: [], duels: [], battles: [], people: {},
   tab: 'home', sub: { library: 'reading', arena: 'battle', friends: 'feed', shop: 'all' },
-  sheet: null, battle: null, party: [], busy: false,
+  sheet: null, battle: null, party: [], busy: false, admin: false,
   auth: { mode: 'signup', error: '', name: '' }, starter: { element: null, name: '' },
 };
 
@@ -28,6 +28,7 @@ export function pagesBetween(uid, from, to = '9999') {
   return n;
 }
 export const pagesToday = () => pagesBetween(S.me.id, today(), today());
+export const pagesLeftToday = () => Math.max(0, DAILY_PAGE_LIMIT - pagesToday());
 export const weekPages = (uid) => pagesBetween(uid, weekStart());
 export const streak = () => liveStreak(S.me);
 
@@ -107,6 +108,7 @@ export async function loadAll(pid) {
   if (!me) { await db.logout(); S.me = null; return; }
   me.state ||= {};
   S.me = me;
+  const adminCheck = db.isAdmin().catch(() => false);
   const since = addDays(today(), -90);
   const [monsters, books, logs, shipsA, shipsB, duelsA, duelsB, atk, def] = await Promise.all([
     db.select('monsters', { owner: pid }, { order: 'created_at', asc: true }),
@@ -119,7 +121,7 @@ export async function loadAll(pid) {
     db.select('battles', { attacker: pid }, { order: 'created_at', limit: 10 }),
     db.select('battles', { defender: pid }, { order: 'created_at', limit: 10 }),
   ]);
-  Object.assign(S, { monsters, books, logs });
+  Object.assign(S, { monsters, books, logs, admin: await adminCheck });
   S.ships = [...shipsA, ...shipsB];
   S.duels = [...duelsA, ...duelsB].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   S.battles = [...atk, ...def].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 12);

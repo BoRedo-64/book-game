@@ -36,13 +36,22 @@ Share the link. Friends pick a trainer name and password, then add each other by
 
 - Free Supabase projects pause after about a week with no activity at all; resume from the dashboard.
 - There is no password reset: a forgotten password means starting a new trainer. Pick memorable passwords.
-- Game values (XP, coins) are written by the app itself, so a determined friend could cheat with browser tools. Fine for a friend group, not for strangers.
+- Game values (XP, coins) are written by the app itself, so a determined friend could cheat with browser tools. Fine for a friend group, not for strangers. The database does block more than 100 pages a day and flags hand-edited XP or page counts for the admin.
+
+## Admin
+
+1. Register your own trainer in the app as normal.
+2. In `supabase/add-admin.sql` (or the end of `schema.sql`), replace `YOUR_TRAINER_NAME` in the last statement with your trainer name, then run the file in **SQL Editor**.
+3. Reload the app: a **🛡️ Admin** button appears on your Profile tab.
+
+The admin screen lists suspicious activity (more than 50 pages in a day, blocked attempts to log over 100 or to log on another date, XP or page counts edited by hand) and every trainer with their pages today and this week. **Ban** (tap twice) deletes that account and everything in it; its entries stay in the log under the old name. A banned friend can still register a new trainer.
 - `Ressources/` holds the original full-size art; the app uses the optimised copies in `assets/monsters/`.
 
 ## How the game works
 
 | | |
 |---|---|
+| Daily limit | 100 pages (the app and the database both enforce it) |
 | Hatch | 30 pages |
 | Evolutions | level 10 (about 400 pages) and level 30 (about 2,750 pages) |
 | XP | 1 per page, +10% on a 7-day streak, +20% on a 30-day streak, +50 for finishing a book |

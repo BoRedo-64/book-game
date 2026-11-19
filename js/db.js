@@ -57,9 +57,16 @@ function supabaseBackend() {
       if (limit) q = q.limit(limit);
       return ok(await q);
     },
-    async insert(table, row) { return ok(await sb.from(table).insert(row).select().single()); },
+    async insert(table, row) {
+      const res = await sb.from(table).insert(row).select().single();
+      // the server skips (rather than rejects) a reading log over the daily limit, so it can flag it
+      if (res.error?.code === 'PGRST116' && table === 'logs') throw new Error('Daily limit reached: nobody reads more than 100 pages a day!');
+      return ok(res);
+    },
     async update(table, id, patch) { return ok(await sb.from(table).update(patch).eq('id', id).select().single()); },
     async remove(table, where) { ok(await filter(sb.from(table).delete(), where)); },
+    async isAdmin() { return !!ok(await sb.rpc('is_admin')); },
+    async ban(id) { ok(await sb.rpc('admin_ban', { p_id: id })); },
   };
 }
 
@@ -158,6 +165,8 @@ function localBackend() {
     async remove(table, where) {
       data.tables[table] = T(table).filter((r) => !match(r, where)); save();
     },
+    async isAdmin() { return false; }, // the admin tools need the online database
+    async ban() { throw new Error('Banning only works online.'); },
   };
 }
 

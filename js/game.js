@@ -56,6 +56,7 @@ export const rareChance = (myEl) => (isHybrid(myEl) ? RARE_WILD_CHANCE_HYBRID : 
 export const STARTERS = Object.keys(ELEMENTS).filter((k) => ELEMENTS[k].starter !== false);
 
 export const HATCH_PAGES = 30;
+export const DAILY_PAGE_LIMIT = 100; // anything above this in one day is treated as cheating (also enforced by the database)
 export const EVOLVE_1 = 10;
 export const EVOLVE_2 = 30;
 export const MAX_LEVEL = 60;

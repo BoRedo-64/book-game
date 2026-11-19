@@ -1,11 +1,11 @@
 // All screens, rendered as HTML strings from state.
 import {
-  S, active, person, nameOf, monsterOf, pagesToday, weekPages, streak, quests, raid, ranking,
+  S, active, person, nameOf, monsterOf, pagesToday, pagesLeftToday, weekPages, streak, quests, raid, ranking,
   achievements, duelView, badges, today, daily, foughtToday,
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, DAILY_PAGE_LIMIT, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -416,7 +416,7 @@ function dex() {
 
 function meView() {
   const lg = league(S.me.trophies), ach = achievements();
-  return `<header class="title"><h1>Profile</h1><button class="btn ghost sm" data-a="sheet" data-s="settings">⚙️ Settings</button></header>
+  return `<header class="title"><h1>Profile</h1><div>${S.admin ? '<button class="btn ghost sm" data-a="sheet" data-s="admin">🛡️ Admin</button> ' : ''}<button class="btn ghost sm" data-a="sheet" data-s="settings">⚙️ Settings</button></div></header>
     <section class="card profile">${avatar(S.me, 'xl')}
       <div><h2>${h(S.me.username)}</h2><p>${lg.icon} ${lg.name} league · ${fmt(S.me.trophies)} 🏆</p></div></section>
     <section class="stats">
@@ -439,17 +439,20 @@ function logSheet(s) {
   const b = S.books.find((x) => x.id === s.id) || reading[0];
   if (!b) return `<h2>Log reading</h2><p class="muted">Add a book first, then log the pages you read.</p>
     <button class="btn primary wide" data-a="sheet" data-s="addbook">＋ Add a book</button>`;
-  const mon = active();
+  const mon = active(), left = pagesLeftToday();
+  if (!left) return `<h2>Log reading</h2><p class="muted">You already read ${DAILY_PAGE_LIMIT} pages today, the daily limit. Come back tomorrow!</p>`;
+  const max = Math.min(b.total_pages, b.current_page + left);
   return `<h2>Log reading</h2>
     ${reading.length > 1 ? `<div class="chips">${reading.map((x) => `<button class="${x.id === b.id ? 'on' : ''}" data-a="sheet" data-s="log" data-id="${x.id}">${h(x.title)}</button>`).join('')}</div>` : ''}
     <div class="row">${cover(b, 'sm')}<div><b>${h(b.title)}</b><small>You were on page ${b.current_page} of ${b.total_pages}</small></div></div>
     <label for="lg-page">What page are you on now?</label>
     <div class="stepper"><button data-a="bump" data-n="-1" aria-label="Minus one">−</button>
-      <input id="lg-page" type="number" inputmode="numeric" min="${b.current_page}" max="${b.total_pages}" value="${b.current_page}" data-from="${b.current_page}" data-max="${b.total_pages}">
+      <input id="lg-page" type="number" inputmode="numeric" min="${b.current_page}" max="${max}" value="${b.current_page}" data-from="${b.current_page}" data-max="${max}">
       <button data-a="bump" data-n="1" aria-label="Plus one">＋</button></div>
     <div class="chips center">${[5, 10, 25, 50].map((n) => `<button data-a="bump" data-n="${n}">+${n}</button>`).join('')}
-      <button data-a="bump" data-n="99999">Finished!</button></div>
+      ${max === b.total_pages ? '<button data-a="bump" data-n="99999">Finished!</button>' : ''}</div>
     <p class="gain" id="lg-gain">Tap + to add the pages you read</p>
+    <p class="hint">Daily limit: ${DAILY_PAGE_LIMIT} pages · ${plural(left, 'page')} left today</p>
     <button class="btn primary big wide" data-a="saveLog" data-id="${b.id}">Feed ${h(mon.name)}</button>`;
 }
 
@@ -591,7 +594,41 @@ function settingsSheet(s) {
     <button class="btn ghost wide" data-a="logout">Log out</button>`;
 }
 
-const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet };
+const FLAG_TEXT = {
+  over_50: (f) => `read <b>${f.pages}</b> pages`,
+  over_limit: (f) => `tried to log <b>${f.pages}</b> pages (blocked)`,
+  wrong_day: (f) => `tried to log ${f.pages} pages on another date (blocked)`,
+  xp_jump: (f) => `monster XP jumped by <b>${fmt(f.pages)}</b> at once (edited by hand?)`,
+  pages_jump: (f) => `page count jumped by <b>${fmt(f.pages)}</b> at once (edited by hand?)`,
+  banned: () => 'was banned',
+};
+const when = (f) => new Date(f.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+function banButton(s, id, name) {
+  if (!id || id === S.me.id) return '';
+  return s.confirm === id
+    ? `<button class="btn ban sm" data-a="ban" data-id="${id}">Delete ${h(name)}?</button>`
+    : `<button class="btn ghost sm" data-a="ban" data-id="${id}">Ban</button>`;
+}
+
+function adminSheet(s) {
+  if (!s.flags) return '<h2>🛡️ Admin</h2><p class="muted">Loading…</p>';
+  const flagRows = s.flags.map((f) => `<div class="row"><div><b>${h(f.username)}</b>
+      <small>${(FLAG_TEXT[f.kind] || (() => h(f.kind)))(f)}${f.times > 1 ? ` · ${f.times}×` : ''} · ${f.day ? h(f.day) : when(f)}</small></div>
+      ${f.kind === 'banned' ? '' : banButton(s, f.user_id, f.username)}
+      <button class="btn ghost sm" data-a="dismissFlag" data-id="${f.id}" aria-label="Dismiss">✕</button></div>`).join('');
+  const players = s.players.map((p) => `<div class="row">${avatar(p)}<div><b>${h(p.username)}</b>
+      <small>today ${fmt(s.today[p.id] || 0)} · this week ${fmt(s.week[p.id] || 0)} · total ${fmt(p.total_pages)} pages</small></div>
+      ${banButton(s, p.id, p.username)}</div>`).join('');
+  return `<h2>🛡️ Admin</h2>
+    <p class="muted">Banning deletes the account and everything in it. It can’t be undone.</p>
+    <h3 class="h">Suspicious activity</h3>
+    ${s.flags.length ? `<section class="card list">${flagRows}</section>` : '<p class="emptynote">Nothing suspicious. 👍</p>'}
+    <h3 class="h">All trainers <small>${s.players.length}</small></h3>
+    <section class="card list">${players}</section>`;
+}
+
+const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet, admin: adminSheet };
 
 // ---------- overlays ----------
 function partyView(p) {

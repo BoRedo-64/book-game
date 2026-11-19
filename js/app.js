@@ -1,5 +1,5 @@
 // Boot, event wiring and every action the player can take.
-import { S, active, person, monsterOf, loadAll, daily, foughtToday, quests, raid, duelView, today } from './state.js';
+import { S, active, person, monsterOf, loadAll, daily, foughtToday, quests, raid, duelView, today, pagesLeftToday } from './state.js';
 import { view, h, COIN, ENERGY } from './views.js';
 import { db } from './db.js';
 import * as G from './game.js';
@@ -107,6 +107,17 @@ function updateGain() {
   out.classList.toggle('on', pages > 0);
 }
 
+// ---------- admin ----------
+async function loadAdmin() {
+  const [flags, players, logs] = await Promise.all([
+    db.select('flags', {}, { order: 'created_at', limit: 100 }),
+    db.select('profiles', {}, { order: 'username', asc: true }),
+    db.select('logs', { day: { gte: G.weekStart() } }),
+  ]);
+  const sum = (from) => logs.reduce((t, l) => (l.day >= from ? { ...t, [l.user_id]: (t[l.user_id] || 0) + l.pages } : t), {});
+  if (S.sheet?.s === 'admin') { Object.assign(S.sheet, { flags, players, today: sum(today()), week: sum(G.weekStart()) }); render(); }
+}
+
 // ---------- battle ----------
 function step(bt, who, move) {
   const other = who === 'me' ? 'foe' : 'me', a = bt[who];
@@ -161,6 +172,7 @@ const A = {
   sheet(d) {
     const { a, ...rest } = d;
     S.sheet = rest; render();
+    if (rest.s === 'admin') loadAdmin().catch((e) => toast(h(e.message)));
     if (rest.s === 'friend') {
       db.select('books', { owner: rest.id, status: 'reading' }, { limit: 3 }).then((books) => {
         if (S.sheet?.s === 'friend' && S.sheet.id === rest.id) { S.sheet.books = books; render(); }
@@ -168,6 +180,19 @@ const A = {
     }
   },
   closeSheet() { S.sheet = null; render(); },
+
+  async ban(d) {
+    if (S.sheet?.confirm !== d.id) { S.sheet.confirm = d.id; return render(); }
+    const name = S.sheet.players.find((p) => p.id === d.id)?.username || 'Trainer';
+    await db.ban(d.id);
+    S.sheet.confirm = null;
+    await loadAdmin();
+    toast(`${h(name)} was banned`);
+  },
+  async dismissFlag(d) {
+    await db.remove('flags', { id: d.id });
+    S.sheet.flags = S.sheet.flags.filter((f) => f.id !== d.id); render();
+  },
   partyNext() { S.party.shift(); render(); },
 
   pet(d, el) {
@@ -193,7 +218,14 @@ const A = {
     const book = S.books.find((b) => b.id === d.id);
     const page = clamp(parseInt(val('lg-page'), 10) || 0, book.current_page, book.total_pages);
     if (page <= book.current_page) return toast('Move the page number up first');
-    if (page - book.current_page > 2000) return toast('That is a lot for one sitting! Log up to 2,000 pages at a time.');
+    // re-check today's pages on the server in case they were logged on another device
+    const todays = await db.select('logs', { user_id: S.me.id, day: today() });
+    S.logs = [...S.logs.filter((l) => l.day !== today()), ...todays];
+    const left = pagesLeftToday();
+    if (page - book.current_page > left) {
+      render();
+      return toast(left ? `Daily limit is ${G.DAILY_PAGE_LIMIT} pages: you can log ${left} more today.` : `You hit the ${G.DAILY_PAGE_LIMIT}-page daily limit. Come back tomorrow!`);
+    }
     await logReading(book, page);
   },
 
