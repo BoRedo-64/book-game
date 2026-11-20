@@ -262,6 +262,19 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
 .hab { border-radius: 16px; padding: 30px 10px 10px; display: grid; border: 3px solid transparent; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
 .hab small { color: #fff; } .hab.on { border-color: #fff; } .hab:disabled { opacity: .5; }
 
+/* ---------- icons (Phosphor fill, see js/icons.js) ---------- */
+.i { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -.2em; flex: none; }
+.i-el { color: var(--el); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
+.i-fire { color: #ff8a3d; } .i-gold { color: var(--gold); } .i-ice { color: #9fe3ff; } .i-hp { color: var(--bad); }
+.i-silver { color: #d6dbe8; } .i-bronze { color: #e0904f; } .i-paper { color: #e8d9b0; } .i-mythic { color: #d18bff; }
+.i-book { color: var(--el); }
+.avatar > .i { width: 55%; height: 55%; color: var(--el-soft, var(--muted)); }
+.badges .got .i { color: var(--gold); }
+.stars .i { width: 1em; height: 1em; } .stars .i.off { color: #4b4080; }
+.heart .i { width: 1em; height: 1em; } .heart.h0 { color: var(--gold); } .heart.h1 { color: #fff3a8; } .heart.h2 { color: var(--good); } .heart.h3 { color: #5fb4ff; } .heart.h4 { color: #ff9a4a; }
+.sart .i, .bigemoji .i { width: 1em; height: 1em; }
+.tick .i { vertical-align: -.15em; }
+
 /* ---------- habitats ---------- */
 /* painted backdrops; the dark top/bottom fade keeps white text and cards readable */
 .hab-default, .hab-library, .hab-sunset, .hab-crystal, .hab-clouds {

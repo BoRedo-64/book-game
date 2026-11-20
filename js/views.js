@@ -9,8 +9,11 @@ import {
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
+import { ic } from './icons.js';
 
 const RAID_IMG = 'assets/monsters/dark-3.webp', RAID_DEAD_IMG = 'assets/monsters/dark-defeated.webp';
+const elIc = (k) => ic(ELEMENTS[k].icon, `i-el el-${k}`);
+const lgIc = (lg) => ic(lg.icon, `i-${lg.tint}`);
 export const COIN = '<img class="ico" src="assets/coin.webp" alt="coins">';
 export const ENERGY = '<img class="ico" src="assets/energy.webp" alt="energy">';
 export const h = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -34,7 +37,7 @@ const monImg = (mon, cls = '') => {
 };
 const avatar = (profile, size = '') => {
   const m = profile && monsterOf(profile);
-  return `<span class="avatar ${size} ${m ? 'el-' + m.element : ''}">${m ? monImg(m) : '🥚'}</span>`;
+  return `<span class="avatar ${size} ${m ? 'el-' + m.element : ''}">${m ? monImg(m) : ic('egg')}</span>`;
 };
 const cover = (b, cls = '') => b.cover_url?.startsWith('https://covers.openlibrary.org/')
   ? `<img class="cover ${cls}" src="${h(b.cover_url)}" alt="" loading="lazy">`
@@ -71,7 +74,7 @@ function starterView() {
     <div class="starters">${STARTERS.map((k) => [k, ELEMENTS[k]]).map(([k, e]) => `
       <button class="starter-card el-${k} ${pick === k ? 'on' : ''}" data-a="pickStarter" data-el="${k}">
         <img src="${monsterImg(k, 0)}" alt="${e.name} egg">
-        <div><b>${e.emoji} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${e.beats.map((b) => ELEMENTS[b].name).join(' & ')}</small><small class="perk">✨ ${e.perk.name}: ${perkText(k)}</small></div>
+        <div><b>${elIc(k)} ${e.name}</b><small>${e.blurb}</small><small class="beats">Strong against ${e.beats.map((b) => ELEMENTS[b].name).join(' & ')}</small><small class="perk">${ic('sparkle')} ${e.perk.name}: ${perkText(k)}</small></div>
       </button>`).join('')}</div>
     <form data-form="starter" class="stack">
       <input id="st-name" placeholder="Name your monster" maxlength="20" value="${h(S.starter.name)}" required>
@@ -94,7 +97,7 @@ function mood(mon, info) {
 function topbar() {
   const st = streak(), lit = S.me.last_read === today();
   return `<header class="topbar">
-    <span class="stat ${lit ? 'lit' : ''}" title="Day streak">🔥 <b>${st}</b></span>
+    <span class="stat ${lit ? 'lit' : ''}" title="Day streak">${ic('fire', 'i-fire')} <b>${st}</b></span>
     <span class="stat" title="Battle energy">${ENERGY} <b>${S.me.energy}</b><small>/${MAX_ENERGY}</small></span>
     <button class="stat" data-a="go" data-tab="shop" title="Coins">${COIN} <b>${fmt(S.me.coins)}</b></button>
   </header>`;
@@ -106,7 +109,7 @@ function stageCard() {
   return `<section class="stage hab-${S.me.habitat} el-${mon.element}">
     <div class="stage-top">
       <span class="chip">${info.level ? `Lv ${info.level}` : 'Egg'}</span>
-      <span class="chip">${ELEMENTS[mon.element].emoji} ${stageName(mon.element, info.stage)}</span>
+      <span class="chip">${ic(ELEMENTS[mon.element].icon)} ${stageName(mon.element, info.stage)}</span>
     </div>
     <p class="bubble">${h(mood(mon, info))}</p>
     <button class="mon ${info.level === 0 ? 'egg' : ''}" data-a="pet" aria-label="Pet ${h(mon.name)}">${monImg(mon)}</button>
@@ -124,7 +127,7 @@ function homeView() {
   const pt = pagesToday(), goal = S.me.daily_goal, reading = S.books.filter((b) => b.status === 'reading');
   const r = raid(), bonus = streakBonus(streak());
   return `${topbar()}${stageCard()}
-    <button class="btn primary big wide" data-a="openLog">📖 Log reading</button>
+    <button class="btn primary big wide" data-a="openLog">${ic('book-open')} Log reading</button>
     ${fusionBanner()}
     <section class="card goal">
       <div class="ring" style="--p:${pct(pt, goal)}"><b>${pt}</b><small>/ ${goal}</small></div>
@@ -141,7 +144,7 @@ function homeView() {
     <section class="card list">${quests().map((q) => `
       <div class="quest ${q.claimed ? 'claimed' : ''}">
         <div><b>${h(q.text)}</b>${bar(q.cur, q.max)}</div>
-        ${q.claimed ? '<span class="tick">✓</span>' : q.done
+        ${q.claimed ? `<span class="tick">${ic('check')}</span>` : q.done
           ? `<button class="btn gold sm" data-a="claimQuest" data-id="${q.id}">+${q.reward} ${COIN}</button>`
           : `<span class="reward">${q.reward} ${COIN}</span>`}
       </div>`).join('')}</section>
@@ -164,7 +167,7 @@ function libraryView() {
       <button class="book" data-a="sheet" data-s="book" data-id="${b.id}">${cover(b)}
         <span class="meta"><b>${h(b.title)}</b><small>${h(b.author)}</small>
         ${b.status === 'reading' ? `${bar(b.current_page, b.total_pages)}<small>${Math.round(pct(b.current_page, b.total_pages))}% · p. ${b.current_page} / ${b.total_pages}</small>` : ''}
-        ${b.status === 'finished' ? `<small class="stars">${'★'.repeat(b.rating || 0)}${'☆'.repeat(5 - (b.rating || 0))}</small>` : ''}
+        ${b.status === 'finished' ? `<small class="stars">${[1, 2, 3, 4, 5].map((n) => ic('star', n <= (b.rating || 0) ? '' : 'off')).join('')}</small>` : ''}
         ${b.status === 'wishlist' ? `<small>${b.total_pages} pages</small>` : ''}</span>
       </button>`).join('')}</div>` : `<p class="emptynote">${empty}</p>`}`;
 }
@@ -184,18 +187,18 @@ function battleTab() {
   const el = ELEMENTS[mon.element], perk = el.perk;
   return `<section class="fcard el-${mon.element}"><div class="fcard-frame">
       <div class="fcard-in">
-        <span class="fcard-ribbon" aria-label="${el.name} family">${el.emoji}</span>
+        <span class="fcard-ribbon" aria-label="${el.name} family">${ic(el.icon)}</span>
         <div class="fcard-mon">${monImg(mon)}<i class="fcard-rock"></i></div>
         <div class="fcard-info">
           <h2 class="fcard-name"><span>${h(mon.name)}</span><em>Lv. ${me.level}</em></h2>
           ${egg ? '<p class="fcard-box fcard-note">Eggs can’t fight. Hatch it first!</p>' : `
           <div class="fcard-stats">
-            <span class="fcard-box">❤️ <b>${me.maxHp}</b> HP</span>
-            <span class="fcard-box">⚔️ <b>${me.atk}</b> ATK</span>
+            <span class="fcard-box">${ic('heart', 'i-hp')} <b>${me.maxHp}</b> HP</span>
+            <span class="fcard-box">${ic('sword')} <b>${me.atk}</b> ATK</span>
           </div>
-          <div class="fcard-box fcard-perk"><span class="hexa">${el.emoji}</span>
+          <div class="fcard-box fcard-perk"><span class="hexa">${ic(el.icon)}</span>
             <p><b>${perk.name}</b> <small>· ${perk.healMult || perk.immuneGuard ? 'Guard' : el.blast}</small><br><span>${perkText(mon.element, false)}</span></p></div>`}
-          <div class="fcard-box fcard-league">${lg.icon} ${lg.name} league <i>·</i> 🏆 ${fmt(S.me.trophies)}</div>
+          <div class="fcard-box fcard-league">${lgIc(lg)} ${lg.name} league <i>·</i> ${ic('trophy', 'i-gold')} ${fmt(S.me.trophies)}</div>
           <div class="fcard-energy" aria-label="${S.me.energy} of ${MAX_ENERGY} energy"><span class="orb">${ENERGY}</span>${pips}</div>
         </div>
       </div>
@@ -203,8 +206,8 @@ function battleTab() {
     <p class="hint">Every ${PAGES_PER_ENERGY} pages you read charges 1 ${ENERGY}. A battle costs 1 ${ENERGY}.</p>
     <h3 class="h">Opponents</h3>
     <section class="card list">
-      <div class="row"><span class="avatar wild">🌀</span>
-        <div><b>Wild encounter</b><small>A random monster near your level${isHybrid(mon.element) ? ` · ✨ rare monsters show up 1 in ${Math.round(1 / RARE_WILD_CHANCE_HYBRID)} battles with ${h(mon.name)} (normally 1 in ${Math.round(1 / RARE_WILD_CHANCE)})` : ''}</small></div>
+      <div class="row"><span class="avatar wild">${ic('spiral')}</span>
+        <div><b>Wild encounter</b><small>A random monster near your level${isHybrid(mon.element) ? ` · ${ic('sparkle', 'i-gold')} rare monsters show up 1 in ${Math.round(1 / RARE_WILD_CHANCE_HYBRID)} battles with ${h(mon.name)} (normally 1 in ${Math.round(1 / RARE_WILD_CHANCE)})` : ''}</small></div>
         <button class="btn primary sm" data-a="fight" ${can ? '' : 'disabled'}>Fight</button></div>
       ${S.friends.map((f) => {
         const fm = monsterOf(f); if (!fm) return '';
@@ -238,7 +241,7 @@ function duelsTab() {
       <span>${h(nameOf(v.other))}<b>${v.their}</b></span></div>`;
   };
   const type = (d) => `${DUEL_TYPES[d.days]?.name || 'Duel'} · ${plural(d.days, 'day')} · ${d.prize} ${COIN}`;
-  return `<button class="btn primary wide" data-a="sheet" data-s="newduel" ${S.friends.length ? '' : 'disabled'}>⚔️ Challenge a friend</button>
+  return `<button class="btn primary wide" data-a="sheet" data-s="newduel" ${S.friends.length ? '' : 'disabled'}>${ic('sword')} Challenge a friend</button>
     <p class="hint">A reading race: whoever reads more pages before time runs out takes the prize.</p>
     ${groups.invites.map(([d, v]) => `<section class="card duel invite"><small>INVITE · ${type(d)}</small>
       <div class="row">${avatar(person(v.other))}<div><b>${h(nameOf(v.other))} challenged you!</b></div></div>
@@ -264,8 +267,8 @@ function raidTab() {
       <img class="shadowbeast big" src="${r.dead ? RAID_DEAD_IMG : RAID_IMG}" alt="">
       <h2>${h(r.name)}</h2><p class="muted">${h(r.line)}</p>
       ${bar(r.left, r.hp, 'hp')}<p><b>${fmt(r.left)}</b> / ${fmt(r.hp)} HP</p>
-      ${r.dead ? (r.claimed ? '<p class="tick">Reward claimed ✓</p>'
-        : r.mine > 0 ? `<button class="btn gold wide" data-a="raidClaim">Claim ${r.reward} ${COIN} + ❄️ streak freeze</button>` : '<p class="muted">Read at least a page this week to share the loot.</p>')
+      ${r.dead ? (r.claimed ? `<p class="tick">Reward claimed ${ic('check')}</p>`
+        : r.mine > 0 ? `<button class="btn gold wide" data-a="raidClaim">Claim ${r.reward} ${COIN} + ${ic('snowflake', 'i-ice')} streak freeze</button>` : '<p class="muted">Read at least a page this week to share the loot.</p>')
         : '<p class="hint">Every page you and your friends read this week deals 1 damage. Beat it together before Monday.</p>'}
     </section>
     <h3 class="h">Damage dealt</h3>
@@ -287,14 +290,14 @@ function eventLine(e) {
   switch (e.type) {
     case 'read': return `read <b>${plural(d.pages, 'page')}</b> of <i>${h(d.title)}</i>`;
     case 'start': return `started reading <i>${h(d.title)}</i>`;
-    case 'finish': return `finished <i>${h(d.title)}</i> 🎉`;
-    case 'hatch': return `hatched <b>${h(d.name)}</b> the ${stageName(d.element, 1)} 🐣`;
-    case 'evolve': return `<b>${h(d.name)}</b> evolved into ${stageName(d.element, d.stage)} ✨`;
+    case 'finish': return `finished <i>${h(d.title)}</i> ${ic('confetti', 'i-gold')}`;
+    case 'hatch': return `hatched <b>${h(d.name)}</b> the ${stageName(d.element, 1)} ${ic('egg-crack', 'i-gold')}`;
+    case 'evolve': return `<b>${h(d.name)}</b> evolved into ${stageName(d.element, d.stage)} ${ic('sparkle', 'i-gold')}`;
     case 'level': return `<b>${h(d.name)}</b> reached level ${d.level}`;
-    case 'streak': return `is on a <b>${d.days}-day streak</b> 🔥`;
-    case 'battle': return `beat <b>${h(d.foe)}</b> in battle ⚔️`;
-    case 'egg': return `adopted a new ${ELEMENTS[d.element]?.name} egg 🥚`;
-    case 'fuse': return `bred a <b>${ELEMENTS[d.element]?.name}</b> egg from ${(d.parents || []).map((p) => ELEMENTS[p]?.name).join(' + ')} 🧬`;
+    case 'streak': return `is on a <b>${d.days}-day streak</b> ${ic('fire', 'i-fire')}`;
+    case 'battle': return `beat <b>${h(d.foe)}</b> in battle ${ic('sword')}`;
+    case 'egg': return `adopted a new ${ELEMENTS[d.element]?.name} egg ${ic('egg')}`;
+    case 'fuse': return `bred a <b>${ELEMENTS[d.element]?.name}</b> egg from ${(d.parents || []).map((p) => ELEMENTS[p]?.name).join(' + ')} ${ic('dna')}`;
     default: return 'did something bookish';
   }
 }
@@ -305,7 +308,7 @@ function feedTab() {
     const n = S.cheers.filter((c) => c.event_id === e.id), mine = n.some((c) => c.user_id === S.me.id);
     return `<article class="card post">${avatar(person(e.user_id))}
       <div><p>${['evolve', 'level'].includes(e.type) ? (e.user_id === S.me.id ? 'Your' : `${h(nameOf(e.user_id))}’s`) : `<b>${h(nameOf(e.user_id))}</b>`} ${eventLine(e)}</p><small>${timeAgo(e.created_at)}</small></div>
-      <button class="cheer ${mine ? 'on' : ''}" data-a="cheer" data-id="${e.id}" aria-label="Cheer">👏${n.length ? ` <b>${n.length}</b>` : ''}</button>
+      <button class="cheer ${mine ? 'on' : ''}" data-a="cheer" data-id="${e.id}" aria-label="Cheer">${ic('hands-clapping')}${n.length ? ` <b>${n.length}</b>` : ''}</button>
     </article>`;
   }).join('')}</section>`;
 }
@@ -314,8 +317,8 @@ function rankTab() {
   const rows = ranking();
   return `<p class="hint">Pages read since Monday. Resets every week.</p>
     <section class="card list">${rows.map((r, i) => `<div class="row ${r.p.id === S.me.id ? 'me' : ''}">
-      <span class="rank r${i + 1}">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(r.p)}
-      <div><b>${h(nameOf(r.p.id))}</b><small>🔥 ${r.p.id === S.me.id ? streak() : r.p.streak} day streak</small></div>
+      <span class="rank r${i + 1}">${['gold', 'silver', 'bronze'][i] ? ic('medal', `i-${['gold', 'silver', 'bronze'][i]}`) : i + 1}</span>${avatar(r.p)}
+      <div><b>${h(nameOf(r.p.id))}</b><small>${ic('fire', 'i-fire')} ${r.p.id === S.me.id ? streak() : r.p.streak} day streak</small></div>
       <b class="num">${fmt(r.pages)}<small> pages</small></b></div>`).join('')}</section>
     ${rows.length < 2 ? '<p class="emptynote">Add friends to make this a real race.</p>' : ''}`;
 }
@@ -328,11 +331,11 @@ function friendsTab() {
     ${S.incoming.length ? `<h3 class="h">Requests</h3><section class="card list">${S.incoming.map((f) => `<div class="row">${avatar(person(f.requester))}
       <div><b>${h(nameOf(f.requester))}</b><small>wants to be friends</small></div>
       <button class="btn primary sm" data-a="friendAccept" data-id="${f.id}">Accept</button>
-      <button class="btn ghost sm" data-a="friendRemove" data-id="${f.id}" aria-label="Decline">✕</button></div>`).join('')}</section>` : ''}
+      <button class="btn ghost sm" data-a="friendRemove" data-id="${f.id}" aria-label="Decline">${ic('x')}</button></div>`).join('')}</section>` : ''}
     ${S.friends.length ? `<h3 class="h">Friends</h3><section class="card list">${S.friends.map((f) => {
       const m = monsterOf(f), i = m && levelInfo(m.xp);
       return `<button class="row" data-a="sheet" data-s="friend" data-id="${f.id}">${avatar(f)}
-        <div><b>${h(f.username)}</b><small>${m ? `${h(m.name)} · ${i.level ? `Lv ${i.level}` : 'Egg'}` : 'No monster yet'} · 🔥 ${f.streak}</small></div><span class="chev">›</span></button>`;
+        <div><b>${h(f.username)}</b><small>${m ? `${h(m.name)} · ${i.level ? `Lv ${i.level}` : 'Egg'}` : 'No monster yet'} · ${ic('fire', 'i-fire')} ${f.streak}</small></div><span class="chev">›</span></button>`;
     }).join('')}</section>` : ''}
     ${S.outgoing.length ? `<h3 class="h">Sent</h3><section class="card list">${S.outgoing.map((f) => `<div class="row">${avatar(person(f.addressee))}
       <div><b>${h(nameOf(f.addressee))}</b><small>request sent</small></div>
@@ -370,22 +373,22 @@ function fusionCard(k) {
     const m = bestOf(p), lv = m ? levelInfo(m.xp).level : 0, done = m && levelInfo(m.xp).stage >= 3;
     return `<div class="fz-parent el-${p} ${done ? 'done' : ''}">
       <span class="fz-orb">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="" class="silhouette">`}</span>
-      <small>${m ? (done ? '✓ Ready' : `Lv ${lv} / ${EVOLVE_2}`) : `Need ${ELEMENTS[p].name}`}</small>${m && !done ? bar(lv, EVOLVE_2) : ''}</div>`;
+      <small>${m ? (done ? `${ic('check')} Ready` : `Lv ${lv} / ${EVOLVE_2}`) : `Need ${ELEMENTS[p].name}`}</small>${m && !done ? bar(lv, EVOLVE_2) : ''}</div>`;
   };
   return `<section class="fusion el-${k} ${ready ? 'ready' : ''} ${owned ? 'owned' : ''}">
     <div class="fz-row">${parent(e.parents[0])}<span class="fz-plus">+</span>${parent(e.parents[1])}<span class="fz-plus">=</span>
       <div class="fz-child"><span class="fz-orb"><img src="${monsterImg(k, 0)}" alt="" class="${owned || ready ? '' : 'silhouette'}"></span>
-        <small>${owned || ready ? `${e.emoji} ${e.name}` : '???'}</small></div></div>
+        <small>${owned || ready ? `${ic(e.icon)} ${e.name}` : '???'}</small></div></div>
     <p class="muted">${owned ? `You bred a ${e.name}! Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} stay on your team.`
       : `Raise ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} to their final form (Lv ${EVOLVE_2}) to breed a ${ready ? e.name : 'mystery'} egg. You keep both parents.`}</p>
-    ${owned ? '' : `<button class="btn ${ready ? 'gold' : 'ghost'} wide" data-a="sheet" data-s="fuse" data-el="${k}" ${ready ? '' : 'disabled'}>${ready ? '🧬 Fuse!' : '🔒 Locked'}</button>`}
+    ${owned ? '' : `<button class="btn ${ready ? 'gold' : 'ghost'} wide" data-a="sheet" data-s="fuse" data-el="${k}" ${ready ? '' : 'disabled'}>${ready ? `${ic('dna')} Fuse!` : `${ic('lock')} Locked`}</button>`}
   </section>`;
 }
 // Fusions stay secret until you can do one; after that, bred hybrids stay listed.
 function fusionSection() {
   const ready = fusable(S.monsters), shown = HYBRIDS.filter((k) => ready.includes(k) || S.monsters.some((m) => m.element === k));
   if (!shown.length) return '';
-  return `<h3 class="h">🧬 Fusion</h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
+  return `<h3 class="h">${ic('dna')} Fusion</h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
 }
 function fusionBanner() {
   const k = fusable(S.monsters)[0];
@@ -393,17 +396,17 @@ function fusionBanner() {
   const e = ELEMENTS[k];
   return `<button class="card fzbanner el-${k}" data-a="sheet" data-s="fuse" data-el="${k}">
     <span class="fz-orb"><img src="${monsterImg(k, 0)}" alt=""></span>
-    <span><small>⚡ A STORM IS BREWING</small><b>Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} can breed a new monster!</b></span></button>`;
+    <span><small>${ic('lightning')} A STORM IS BREWING</small><b>Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} can breed a new monster!</b></span></button>`;
 }
 function fuseSheet(s) {
   const e = ELEMENTS[s.el];
   return `<div class="fz-ritual el-${s.el}">
       ${e.parents.map((p, i) => `<img class="fz-p p${i}" src="${monsterImg(p, 3)}" alt="">`).join('')}
       <span class="fz-vortex"></span><img class="fz-egg" src="${monsterImg(s.el, 0)}" alt=""></div>
-    <h2>${e.emoji} ${e.name} egg</h2>
+    <h2>${ic(e.icon)} ${e.name} egg</h2>
     <p class="muted">${e.blurb} ${e.perk.name}: ${perkText(s.el)} Strong against ${e.beats.map((b) => ELEMENTS[b].name).join(' & ')}.</p>
     <form data-form="fuse" class="stack"><input id="fz-name" placeholder="Name your new monster" maxlength="20" required>
-      <button class="btn gold big wide">🧬 Fuse ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')}</button></form>`;
+      <button class="btn gold big wide">${ic('dna')} Fuse ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')}</button></form>`;
 }
 
 function dex() {
@@ -416,21 +419,21 @@ function dex() {
 
 function meView() {
   const lg = league(S.me.trophies), ach = achievements();
-  return `<header class="title"><h1>Profile</h1><div>${S.admin ? '<button class="btn ghost sm" data-a="sheet" data-s="admin">🛡️ Admin</button> ' : ''}<button class="btn ghost sm" data-a="sheet" data-s="settings">⚙️ Settings</button></div></header>
+  return `<header class="title"><h1>Profile</h1><div>${S.admin ? `<button class="btn ghost sm" data-a="sheet" data-s="admin">${ic('shield-check')} Admin</button> ` : ''}<button class="btn ghost sm" data-a="sheet" data-s="settings">${ic('gear')} Settings</button></div></header>
     <section class="card profile">${avatar(S.me, 'xl')}
-      <div><h2>${h(S.me.username)}</h2><p>${lg.icon} ${lg.name} league · ${fmt(S.me.trophies)} 🏆</p></div></section>
+      <div><h2>${h(S.me.username)}</h2><p>${lgIc(lg)} ${lg.name} league · ${fmt(S.me.trophies)} ${ic('trophy', 'i-gold')}</p></div></section>
     <section class="stats">
       <div><b>${fmt(S.me.total_pages)}</b><small>pages read</small></div>
       <div><b>${S.me.books_done}</b><small>books finished</small></div>
       <div><b>${S.me.best_streak}</b><small>best streak</small></div>
       <div><b>${S.me.wins}</b><small>battles won</small></div>
     </section>
-    <button class="btn gold wide" data-a="go" data-tab="shop">🛒 Shop · ${fmt(S.me.coins)} ${COIN}</button>
+    <button class="btn gold wide" data-a="go" data-tab="shop">${ic('shopping-cart')} Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
     ${fusionSection()}
     <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
-    <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
+    <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${ic(a.icon)}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
 }
 
 // ---------- sheets ----------
@@ -479,10 +482,10 @@ function bookSheet(s) {
   if (!b) return '';
   return `<div class="bookhead">${cover(b)}<div><h2>${h(b.title)}</h2><p class="muted">${h(b.author)}</p>
       <p>${b.status === 'finished' ? `Finished · ${b.total_pages} pages` : `Page ${b.current_page} of ${b.total_pages}`}</p>${bar(b.current_page, b.total_pages)}</div></div>
-    ${b.status === 'reading' ? `<button class="btn primary wide" data-a="sheet" data-s="log" data-id="${b.id}">📖 Log reading</button>` : ''}
+    ${b.status === 'reading' ? `<button class="btn primary wide" data-a="sheet" data-s="log" data-id="${b.id}">${ic('book-open')} Log reading</button>` : ''}
     ${b.status === 'wishlist' ? `<button class="btn primary wide" data-a="startBook" data-id="${b.id}">Start reading</button>` : ''}
     ${b.status === 'finished' ? `<p class="center">Your rating</p><div class="rate">${[1, 2, 3, 4, 5].map((n) =>
-      `<button data-a="rate" data-id="${b.id}" data-n="${n}" class="${n <= (b.rating || 0) ? 'on' : ''}" aria-label="${n} stars">★</button>`).join('')}</div>` : ''}
+      `<button data-a="rate" data-id="${b.id}" data-n="${n}" class="${n <= (b.rating || 0) ? 'on' : ''}" aria-label="${n} stars">${ic('star')}</button>`).join('')}</div>` : ''}
     <button class="btn danger wide" data-a="deleteBook" data-id="${b.id}">${s.confirm ? 'Tap again to delete' : 'Remove book'}</button>`;
 }
 
@@ -495,11 +498,11 @@ function friendSheet(s) {
       <h2>${h(f.username)}</h2>
       <p>${m ? `${h(m.name)} · ${i.level ? `Lv ${i.level} ${stageName(m.element, i.stage)}` : 'Egg'}` : ''}</p></section>
     <section class="stats"><div><b>${f.streak}</b><small>day streak</small></div><div><b>${fmt(f.total_pages)}</b><small>pages</small></div>
-      <div><b>${f.books_done}</b><small>books</small></div><div><b>${lg.icon}</b><small>${lg.name}</small></div></section>
+      <div><b>${f.books_done}</b><small>books</small></div><div><b>${lgIc(lg)}</b><small>${lg.name}</small></div></section>
     <p class="hint">This week: <b>${fmt(weekPages(f.id))}</b> pages (you: ${fmt(weekPages(S.me.id))})</p>
     ${s.books?.length ? `<h3 class="h">Reading now</h3>${s.books.map((b) => `<div class="row">${cover(b, 'sm')}<div><b>${h(b.title)}</b><small>${h(b.author)} · ${Math.round(pct(b.current_page, b.total_pages))}%</small></div></div>`).join('')}` : ''}
-    <div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>⚔️ ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
-      <button class="btn gold" data-a="sheet" data-s="newduel" data-id="${f.id}">🏁 Duel</button></div>
+    <div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>${ic('sword')} ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
+      <button class="btn gold" data-a="sheet" data-s="newduel" data-id="${f.id}">${ic('flag-checkered')} Duel</button></div>
     <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>`;
 }
 
@@ -518,16 +521,16 @@ function newDuelSheet(s) {
 // status: '' (buyable), 'full', 'owned', 'on' (owned and in use), 'done' (daily limit reached). Buying is handled by A.buy in app.js.
 const SHOP = [
   {
-    id: 'boosts', name: 'Boosts', icon: '⚡', blurb: 'A helping hand for busy reading days.',
+    id: 'boosts', name: 'Boosts', icon: 'lightning', blurb: 'A helping hand for busy reading days.',
     items: () => [
-      { name: 'Streak freeze', desc: `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, art: '<span class="sart">❄️</span>',
+      { name: 'Streak freeze', desc: `Saves your streak if you miss a day. You have ${S.me.freezes}/2.`, art: `<span class="sart">${ic('snowflake', 'i-ice')}</span>`,
         price: 60, action: 'buy', attrs: 'data-item="freeze"', status: S.me.freezes >= 2 ? 'full' : '' },
       { name: 'Energy drink', desc: `Refills battle energy to full (${S.me.energy}/${MAX_ENERGY} now). One per day.`, art: `<img src="assets/energy.webp" alt="">`,
         price: 40, action: 'buy', attrs: 'data-item="energy"', status: daily().refills >= 1 ? 'done' : S.me.energy >= MAX_ENERGY ? 'full' : '' },
     ],
   },
   {
-    id: 'monsters', name: 'Monsters', icon: '🥚', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
+    id: 'monsters', name: 'Monsters', icon: 'egg', blurb: 'Hatch a new partner. Switch between them any time.', empty: 'You have every monster. Nice collection!',
     items: () => STARTERS.filter((e) => !S.monsters.some((m) => m.element === e)).map((e) => (
       { name: `${ELEMENTS[e].name} egg`, desc: `${ELEMENTS[e].perk.name}: ${perkText(e)}`, art: `<img src="${monsterImg(e, 0)}" alt="">`, artCls: `el-${e}`,
         price: 300, action: 'sheet', attrs: `data-s="egg" data-el="${e}"`, status: '' }))
@@ -538,7 +541,7 @@ const SHOP = [
       })),
   },
   {
-    id: 'habitats', name: 'Habitats', icon: '🏞️', blurb: 'Backdrops for your monster at home and in battle.',
+    id: 'habitats', name: 'Habitats', icon: 'tree-evergreen', blurb: 'Backdrops for your monster at home and in battle.',
     items: () => Object.entries(HABITATS).map(([k, hb]) => {
       const owned = k === 'default' || (S.me.state.habitats || []).includes(k), mon = active();
       return { name: hb.name, desc: hb.desc,
@@ -550,7 +553,7 @@ const SHOP = [
 ];
 
 function shopItem(it) {
-  const label = { full: 'Full', on: 'In use', owned: 'Use', fuse: '🧬 Fuse', locked: '🔒 Locked', done: 'Tomorrow' }[it.status] || `${it.price} ${COIN}`;
+  const label = { full: 'Full', on: 'In use', owned: 'Use', fuse: `${ic('dna')} Fuse`, locked: `${ic('lock')} Locked`, done: 'Tomorrow' }[it.status] || `${it.price} ${COIN}`;
   const off = ['full', 'on', 'locked', 'done'].includes(it.status) || (!it.status && it.price > S.me.coins);
   return `<div class="sitem ${it.status}">
     <div class="sitem-art ${it.artCls || ''}">${it.art}</div>
@@ -561,11 +564,11 @@ function shopItem(it) {
 
 function shopView() {
   const cur = S.sub.shop || 'all';
-  const tabs = [{ id: 'all', name: 'All', icon: '🛍️' }, ...SHOP].map((c) =>
-    `<button class="${cur === c.id ? 'on' : ''}" data-a="sub" data-tab="shop" data-sub="${c.id}">${c.icon} ${c.name}</button>`).join('');
+  const tabs = [{ id: 'all', name: 'All', icon: 'shopping-bag' }, ...SHOP].map((c) =>
+    `<button class="${cur === c.id ? 'on' : ''}" data-a="sub" data-tab="shop" data-sub="${c.id}">${ic(c.icon)} ${c.name}</button>`).join('');
   const cats = SHOP.filter((c) => cur === 'all' || c.id === cur).map((c) => {
     const items = c.items();
-    return `<section class="scat"><h3 class="h">${c.icon} ${c.name}</h3><p class="muted scat-blurb">${c.blurb}</p>
+    return `<section class="scat"><h3 class="h">${ic(c.icon)} ${c.name}</h3><p class="muted scat-blurb">${c.blurb}</p>
       ${items.length ? `<div class="sgrid">${items.map(shopItem).join('')}</div>` : `<p class="card empty"><small>${c.empty || 'Nothing here yet.'}</small></p>`}</section>`;
   }).join('');
   return `<header class="title shophead">
@@ -612,18 +615,18 @@ function banButton(s, id, name) {
 }
 
 function adminSheet(s) {
-  if (!s.flags) return '<h2>🛡️ Admin</h2><p class="muted">Loading…</p>';
+  if (!s.flags) return `<h2>${ic('shield-check')} Admin</h2><p class="muted">Loading…</p>`;
   const flagRows = s.flags.map((f) => `<div class="row"><div><b>${h(f.username)}</b>
       <small>${(FLAG_TEXT[f.kind] || (() => h(f.kind)))(f)}${f.times > 1 ? ` · ${f.times}×` : ''} · ${f.day ? h(f.day) : when(f)}</small></div>
       ${f.kind === 'banned' ? '' : banButton(s, f.user_id, f.username)}
-      <button class="btn ghost sm" data-a="dismissFlag" data-id="${f.id}" aria-label="Dismiss">✕</button></div>`).join('');
+      <button class="btn ghost sm" data-a="dismissFlag" data-id="${f.id}" aria-label="Dismiss">${ic('x')}</button></div>`).join('');
   const players = s.players.map((p) => `<div class="row">${avatar(p)}<div><b>${h(p.username)}</b>
       <small>today ${fmt(s.today[p.id] || 0)} · this week ${fmt(s.week[p.id] || 0)} · total ${fmt(p.total_pages)} pages</small></div>
       ${banButton(s, p.id, p.username)}</div>`).join('');
-  return `<h2>🛡️ Admin</h2>
+  return `<h2>${ic('shield-check')} Admin</h2>
     <p class="muted">Banning deletes the account and everything in it. It can’t be undone.</p>
     <h3 class="h">Suspicious activity</h3>
-    ${s.flags.length ? `<section class="card list">${flagRows}</section>` : '<p class="emptynote">Nothing suspicious. 👍</p>'}
+    ${s.flags.length ? `<section class="card list">${flagRows}</section>` : `<p class="emptynote">Nothing suspicious. ${ic('thumbs-up')}</p>`}
     <h3 class="h">All trainers <small>${s.players.length}</small></h3>
     <section class="card list">${players}</section>`;
 }
@@ -648,7 +651,7 @@ function partyView(p) {
       <span class="fz-vortex"></span><img class="fz-egg" src="${monsterImg(p.element, 0)}" alt=""></div>`;
     title = 'Fusion!'; text = `${p.parents.map((x) => ELEMENTS[x].name).join(' and ')} made a <b>${el.stages[0]}</b>. Read ${HATCH_PAGES} pages to hatch <b>${h(p.name)}</b>!`;
   } else if (p.type === 'finish') {
-    art = '<div class="bigemoji">📕</div>';
+    art = `<div class="bigemoji">${ic('book', 'i-book')}</div>`;
     title = 'Book finished!'; text = `<i>${h(p.title)}</i> is done. Bonus: +${p.xp} XP and +${p.coins} ${COIN}.`;
   }
   return `<div class="party el-${p.element || 'fire'}"><div class="confetti">${Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 37) % 100};--d:${(i % 7) * 0.12}s;--c:${i % 5}"></i>`).join('')}</div>
@@ -657,7 +660,7 @@ function partyView(p) {
 
 function battleView(b) {
   const side = (f, who) => `<div class="b-side ${who} ${b.anim?.[who] || ''}">
-      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${ELEMENTS[f.element].emoji}</small>${f.burn ? `<span class="burnbadge" title="Burning">🔥 ${f.burn.turns}</span>` : ''}${f.shock ? '<span class="burnbadge shockbadge" title="Electrocuted">⚡ shocked</span>' : ''}${f.poison ? `<span class="burnbadge poisonbadge" title="Poisoned">🍄 ${f.poison.turns}</span>` : ''}${f.guard && f.immune ? '<span class="burnbadge stonebadge" title="Stoneskin">🪨 stone</span>' : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
+      <div class="b-card"><b>${h(f.name)}</b> <small>Lv ${f.level} ${elIc(f.element)}</small>${f.burn ? `<span class="burnbadge" title="Burning">${ic('fire')} ${f.burn.turns}</span>` : ''}${f.shock ? `<span class="burnbadge shockbadge" title="Electrocuted">${ic('lightning')} shocked</span>` : ''}${f.poison ? `<span class="burnbadge poisonbadge" title="Poisoned">${ic('flask')} ${f.poison.turns}</span>` : ''}${f.guard && f.immune ? `<span class="burnbadge stonebadge" title="Stoneskin">${ic('mountains')} stone</span>` : ''}${bar(f.hp, f.maxHp, 'hp')}<small>${f.hp} / ${f.maxHp}</small></div>
       <div class="b-mon"><img src="${monsterImg(f.element, f.stage)}" alt="">${b.pop?.[who] ? `<span class="pop ${b.pop[who].cls}">${b.pop[who].text}</span>` : ''}</div></div>`;
   const moves = Object.entries(MOVES).map(([k, m]) => {
     const cd = k === 'blast' ? b.me.cd : 0;
@@ -667,10 +670,10 @@ function battleView(b) {
       : k === 'guard' && b.me.guardRun ? `Heal ${Math.round(guardFactor(b.me) * 100)}% (tired)`
       : k === 'guard' && p.immuneGuard ? 'Block ALL + big heal'
       : k === 'guard' && p.healMult ? 'Block + big heal' : m.desc;
-    return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${m.icon}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;
+    return `<button class="move ${k}" data-a="move" data-m="${k}" ${b.busy || cd ? 'disabled' : ''}><span>${ic(m.icon)}</span><b>${label}</b><small>${cd ? `Ready in ${cd}` : desc}</small></button>`;
   }).join('');
   const over = b.over && `<div class="b-over ${b.over.won ? 'won' : ''}"><h1>${b.over.won ? 'Victory!' : 'Defeated'}</h1>
-      <p>${b.over.won ? `+${b.over.coins} ${COIN} · +${b.over.trophies} 🏆` : `${b.over.coins ? `+${b.over.coins} ${COIN} · ` : ''}${b.over.trophies ? `${b.over.trophies} 🏆 · ` : ''}Read more pages to grow stronger.`}</p>
+      <p>${b.over.won ? `+${b.over.coins} ${COIN} · +${b.over.trophies} ${ic('trophy', 'i-gold')}` : `${b.over.coins ? `+${b.over.coins} ${COIN} · ` : ''}${b.over.trophies ? `${b.over.trophies} ${ic('trophy', 'i-gold')} · ` : ''}Read more pages to grow stronger.`}</p>
       <button class="btn primary big" data-a="battleEnd">Continue</button></div>`;
   return `<div class="battle hab-${S.me.habitat} el-${b.me.element}">
     <button class="b-flee" data-a="battleFlee" ${b.over ? 'hidden' : ''}>Flee</button>

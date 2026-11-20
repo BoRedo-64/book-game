@@ -2,19 +2,19 @@
 
 export const ELEMENTS = {
   fire: {
-    name: 'Fire', emoji: '🔥', beats: ['plant'], blast: 'Flame Burst',
+    name: 'Fire', icon: 'fire', beats: ['plant'], blast: 'Flame Burst',
     stages: ['Ember Egg', 'Cindling', 'Blazekin', 'Infernox'],
     blurb: 'Hot-headed and fearless. Burns through chapters.',
     perk: { name: 'Scorch', burnTurns: 2, burnPct: 0.1 }, // blast sets the foe on fire
   },
   water: {
-    name: 'Water', emoji: '💧', beats: ['fire'], blast: 'Tidal Crash',
+    name: 'Water', icon: 'drop', beats: ['fire'], blast: 'Tidal Crash',
     stages: ['Tide Egg', 'Dribblet', 'Surgefin', 'Maelstrom'],
     blurb: 'Calm and clever. Goes with the flow of a good story.',
     perk: { name: 'Quick Current', cooldown: 1 }, // blast recharges faster
   },
   plant: {
-    name: 'Plant', emoji: '🌿', beats: ['water'], blast: 'Petal Storm',
+    name: 'Plant', icon: 'leaf', beats: ['water'], blast: 'Petal Storm',
     stages: ['Sprout Egg', 'Leaflet', 'Bloomane', 'Eldergrove'],
     blurb: 'Patient and loyal. Grows a little with every page.',
     perk: { name: 'Regrowth', healMult: 1.75 }, // guard heals more
@@ -22,21 +22,21 @@ export const ELEMENTS = {
   // ---- Hybrids: bred from two final-stage parents (see fusable), +0.5% HP/ATK per level on top of normal
   // growth. Each beats whatever its parents beat, and they form a cycle: rock > tornado > poison > rock.
   tornado: {
-    name: 'Tornado', emoji: '🌪️', beats: ['fire', 'plant', 'poison'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
+    name: 'Tornado', icon: 'tornado', beats: ['fire', 'plant', 'poison'], blast: 'Cyclone Fury', starter: false, parents: ['fire', 'water'],
     stages: ['Gale Egg', 'Whirlet', 'Cyclonyx', 'Tempestor'],
     blurb: 'Born where fire meets water. Restless as a page-turner.',
     perk: { name: 'Electrocute', shockTurns: 1, missChance: 0.4 }, // blast makes the foe's attacks miss
     statBonus: 0.005,
   },
   rock: {
-    name: 'Rock', emoji: '🪨', beats: ['fire', 'water', 'tornado'], blast: 'Rockslide', starter: false, parents: ['water', 'plant'],
+    name: 'Rock', icon: 'mountains', beats: ['fire', 'water', 'tornado'], blast: 'Rockslide', starter: false, parents: ['water', 'plant'],
     stages: ['Boulder Egg', 'Pebblit', 'Cragmaw', 'Titanstone'],
     blurb: 'Where water wears down roots, stone is born. Slow, steady, unbreakable.',
     perk: { name: 'Stoneskin', immuneGuard: true, healMult: 3 }, // first Guard in a row blocks ALL damage, big heal
     statBonus: 0.005,
   },
   poison: {
-    name: 'Poison', emoji: '🍄', beats: ['plant', 'water', 'rock'], blast: 'Toxic Spores', starter: false, parents: ['fire', 'plant'],
+    name: 'Poison', icon: 'flask', beats: ['plant', 'water', 'rock'], blast: 'Toxic Spores', starter: false, parents: ['fire', 'plant'],
     stages: ['Spore Egg', 'Sporeling', 'Toxicap', 'Blightshroom'],
     blurb: 'Grown in the ashes of a burnt forest. Its spores linger long after the hit.',
     perk: { name: 'Venom', poisonTurns: 2, poisonPct: 0.04 }, // blast poisons the foe (% of its max HP per turn)
@@ -136,9 +136,9 @@ export function elementMult(a, b) {
 }
 
 export const MOVES = {
-  strike: { name: 'Strike', icon: '⚔️', desc: 'Reliable hit' },
-  blast: { name: 'Blast', icon: '✨', desc: 'Big elemental hit' },
-  guard: { name: 'Guard', icon: '🛡️', desc: 'Block most damage and heal' },
+  strike: { name: 'Strike', icon: 'sword', desc: 'Reliable hit' },
+  blast: { name: 'Blast', icon: 'sparkle', desc: 'Big elemental hit' },
+  guard: { name: 'Guard', icon: 'shield', desc: 'Block most damage and heal' },
 };
 const BASE_COOLDOWN = 2, BASE_HEAL = 0.12;
 export const blastCooldown = (el) => ELEMENTS[el].perk.cooldown ?? BASE_COOLDOWN;
@@ -232,11 +232,11 @@ export function aiMove(a, b) {
 }
 
 export const LEAGUES = [
-  { min: 600, name: 'Mythic', icon: '👑' },
-  { min: 300, name: 'Gold', icon: '🥇' },
-  { min: 150, name: 'Silver', icon: '🥈' },
-  { min: 50, name: 'Bronze', icon: '🥉' },
-  { min: 0, name: 'Paper', icon: '📜' },
+  { min: 600, name: 'Mythic', icon: 'crown', tint: 'mythic' },
+  { min: 300, name: 'Gold', icon: 'medal', tint: 'gold' },
+  { min: 150, name: 'Silver', icon: 'medal', tint: 'silver' },
+  { min: 50, name: 'Bronze', icon: 'medal', tint: 'bronze' },
+  { min: 0, name: 'Paper', icon: 'scroll', tint: 'paper' },
 ];
 export const league = (trophies) => LEAGUES.find((l) => trophies >= l.min);
 
@@ -275,19 +275,19 @@ export const DUEL_TYPES = {
 };
 
 export const ACHIEVEMENTS = [
-  { id: 'hatch', icon: '🐣', name: 'Hello, world', desc: 'Hatch your first egg', test: (c) => c.maxLevel >= 1 },
-  { id: 'evo1', icon: '⚡', name: 'Growing up', desc: 'Reach the first evolution', test: (c) => c.maxLevel >= EVOLVE_1 },
-  { id: 'evo2', icon: '🌟', name: 'Final form', desc: 'Reach the last evolution', test: (c) => c.maxLevel >= EVOLVE_2 },
-  { id: 'p100', icon: '📄', name: 'Page turner', desc: 'Read 100 pages', test: (c) => c.pages >= 100 },
-  { id: 'p1000', icon: '📚', name: 'Bookworm', desc: 'Read 1,000 pages', test: (c) => c.pages >= 1000 },
-  { id: 'p5000', icon: '🏛️', name: 'Living library', desc: 'Read 5,000 pages', test: (c) => c.pages >= 5000 },
-  { id: 'b1', icon: '✅', name: 'The end', desc: 'Finish a book', test: (c) => c.books >= 1 },
-  { id: 'b5', icon: '🎓', name: 'Well read', desc: 'Finish 5 books', test: (c) => c.books >= 5 },
-  { id: 's7', icon: '🔥', name: 'On fire', desc: '7-day streak', test: (c) => c.bestStreak >= 7 },
-  { id: 's30', icon: '☄️', name: 'Unstoppable', desc: '30-day streak', test: (c) => c.bestStreak >= 30 },
-  { id: 'w1', icon: '🥊', name: 'First blood', desc: 'Win a battle', test: (c) => c.wins >= 1 },
-  { id: 'w25', icon: '🏆', name: 'Champion', desc: 'Win 25 battles', test: (c) => c.wins >= 25 },
-  { id: 'f3', icon: '🤝', name: 'Book club', desc: 'Have 3 friends', test: (c) => c.friends >= 3 },
-  { id: 'col', icon: '🥚', name: 'Collector', desc: 'Raise all three elements', test: (c) => c.elements >= 3 },
-  { id: 'all', icon: '👑', name: 'Monster master', desc: 'Raise every monster to its final form', test: (c) => c.allFinal },
+  { id: 'hatch', icon: 'egg-crack', name: 'Hello, world', desc: 'Hatch your first egg', test: (c) => c.maxLevel >= 1 },
+  { id: 'evo1', icon: 'lightning', name: 'Growing up', desc: 'Reach the first evolution', test: (c) => c.maxLevel >= EVOLVE_1 },
+  { id: 'evo2', icon: 'shooting-star', name: 'Final form', desc: 'Reach the last evolution', test: (c) => c.maxLevel >= EVOLVE_2 },
+  { id: 'p100', icon: 'file-text', name: 'Page turner', desc: 'Read 100 pages', test: (c) => c.pages >= 100 },
+  { id: 'p1000', icon: 'books', name: 'Bookworm', desc: 'Read 1,000 pages', test: (c) => c.pages >= 1000 },
+  { id: 'p5000', icon: 'bank', name: 'Living library', desc: 'Read 5,000 pages', test: (c) => c.pages >= 5000 },
+  { id: 'b1', icon: 'check-circle', name: 'The end', desc: 'Finish a book', test: (c) => c.books >= 1 },
+  { id: 'b5', icon: 'graduation-cap', name: 'Well read', desc: 'Finish 5 books', test: (c) => c.books >= 5 },
+  { id: 's7', icon: 'fire', name: 'On fire', desc: '7-day streak', test: (c) => c.bestStreak >= 7 },
+  { id: 's30', icon: 'meteor', name: 'Unstoppable', desc: '30-day streak', test: (c) => c.bestStreak >= 30 },
+  { id: 'w1', icon: 'boxing-glove', name: 'First blood', desc: 'Win a battle', test: (c) => c.wins >= 1 },
+  { id: 'w25', icon: 'trophy', name: 'Champion', desc: 'Win 25 battles', test: (c) => c.wins >= 25 },
+  { id: 'f3', icon: 'handshake', name: 'Book club', desc: 'Have 3 friends', test: (c) => c.friends >= 3 },
+  { id: 'col', icon: 'egg', name: 'Collector', desc: 'Raise all three elements', test: (c) => c.elements >= 3 },
+  { id: 'all', icon: 'crown', name: 'Monster master', desc: 'Raise every monster to its final form', test: (c) => c.allFinal },
 ];

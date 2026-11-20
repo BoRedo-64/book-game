@@ -5,6 +5,7 @@ import { db } from './db.js';
 import * as G from './game.js';
 import * as Audio from './audio.js';
 import { runSplash } from './splash.js';
+import { ic } from './icons.js';
 
 const root = document.getElementById('app');
 const toastEl = document.getElementById('toast');
@@ -198,7 +199,7 @@ const A = {
   pet(d, el) {
     el.classList.remove('petted'); void el.offsetWidth; el.classList.add('petted');
     const heart = document.createElement('span');
-    heart.className = 'heart'; heart.textContent = ['💛', '✨', '💚', '💙', '🧡'][Math.floor(Math.random() * 5)];
+    heart.className = `heart h${Math.floor(Math.random() * 5)}`; heart.innerHTML = ic(Math.random() < .2 ? 'sparkle' : 'heart');
     heart.style.left = `${30 + Math.random() * 40}%`;
     el.append(heart); setTimeout(() => heart.remove(), 900);
   },
@@ -358,7 +359,7 @@ const A = {
     const dl = daily();
     await saveMe({ energy: S.me.energy - 1, ...(d.id && { state: { ...S.me.state, daily: { ...dl, fought: [...(dl.fought || []), d.id] } } }) });
     S.sheet = null;
-    S.battle = { me, foe, owner, defender: d.id || null, log: foe.rare ? `${G.ELEMENTS[foe.element].emoji} A rare ${foe.name} appeared! Only 1 in ${Math.round(1 / G.rareChance(me.element))} wild battles…` : `${owner ? `${owner}’s ${foe.name}` : foe.name} is ready to fight!`, busy: false, over: null, anim: {}, pop: {} };
+    S.battle = { me, foe, owner, defender: d.id || null, log: foe.rare ? `A rare ${foe.name} appeared! Only 1 in ${Math.round(1 / G.rareChance(me.element))} wild battles…` : `${owner ? `${owner}’s ${foe.name}` : foe.name} is ready to fight!`, busy: false, over: null, anim: {}, pop: {} };
     render();
   },
   async move(d) {
