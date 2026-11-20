@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, DAILY_PAGE_LIMIT, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, addDays, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, DAILY_PAGE_LIMIT, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -385,45 +385,42 @@ function trainerCard(p) {
   </section>`;
 }
 
-// ---------- me ----------
-function heatmap() {
-  const byDay = {};
-  for (const l of S.logs) byDay[l.day] = (byDay[l.day] || 0) + l.pages;
-  const end = today(), start = addDays(end, -(12 * 7 - 1) - ((new Date().getDay() + 6) % 7));
-  let cells = '';
-  for (let d = start; d <= end; d = addDays(d, 1)) {
-    const p = byDay[d] || 0, lvl = p === 0 ? 0 : p < 10 ? 1 : p < 25 ? 2 : p < 50 ? 3 : 4;
-    cells += `<i class="h${lvl}" title="${d}: ${p} pages"></i>`;
-  }
-  return `<div class="heat">${cells}</div>`;
-}
-
-// ---------- fusion (breeding hybrids) ----------
+// ---------- fusion lab (breeding hybrids) ----------
+// One compact row per recipe. A recipe shows up once you own one of its parents; the hybrid
+// stays "???" until you can actually breed it. Recipes you haven't found are only counted.
 const HYBRIDS = Object.keys(ELEMENTS).filter((k) => ELEMENTS[k].parents);
 const bestOf = (el) => S.monsters.filter((m) => m.element === el).sort((a, b) => b.xp - a.xp)[0];
 
-function fusionCard(k) {
-  const e = ELEMENTS[k], owned = S.monsters.some((m) => m.element === k), ready = fusable(S.monsters).includes(k);
-  const parent = (p) => {
-    const m = bestOf(p), lv = m ? levelInfo(m.xp).level : 0, done = m && levelInfo(m.xp).stage >= 3;
-    return `<div class="fz-parent el-${p} ${done ? 'done' : ''}">
-      <span class="fz-orb">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="" class="silhouette">`}</span>
-      <small>${m ? (done ? `${ic('check')} Ready` : `Lv ${lv} / ${EVOLVE_2}`) : `Need ${ELEMENTS[p].name}`}</small>${m && !done ? bar(lv, EVOLVE_2) : ''}</div>`;
-  };
-  return `<section class="fusion el-${k} ${ready ? 'ready' : ''} ${owned ? 'owned' : ''}">
-    <div class="fz-row">${parent(e.parents[0])}<span class="fz-plus">+</span>${parent(e.parents[1])}<span class="fz-plus">=</span>
-      <div class="fz-child"><span class="fz-orb"><img src="${monsterImg(k, 0)}" alt="" class="${owned || ready ? '' : 'silhouette'}"></span>
-        <small>${owned || ready ? `${ic(e.icon)} ${e.name}` : '???'}</small></div></div>
-    <p class="muted">${owned ? `You bred a ${e.name}! Your ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} stay on your team.`
-      : `Raise ${e.parents.map((p) => ELEMENTS[p].name).join(' and ')} to their final form (Lv ${EVOLVE_2}) to breed a ${ready ? e.name : 'mystery'} egg. You keep both parents.`}</p>
-    ${owned ? '' : `<button class="btn ${ready ? 'gold' : 'ghost'} wide" data-a="sheet" data-s="fuse" data-el="${k}" ${ready ? '' : 'disabled'}>${ready ? `${ic('dna')} Fuse!` : `${ic('lock')} Locked`}</button>`}
-  </section>`;
+function fzParent(p) {
+  const m = bestOf(p), lv = m ? levelInfo(m.xp).level : 0, done = lv >= EVOLVE_2;
+  return `<span class="fl-parent el-${p} ${m ? '' : 'missing'} ${done ? 'done' : ''}" style="--p:${pct(lv, EVOLVE_2)}">
+    <span class="fl-ring">${m ? monImg(m) : `<img src="${monsterImg(p, 3)}" alt="">`}</span>
+    <small>${!m ? `Need ${ELEMENTS[p].name}` : done ? `${ic('check')} Ready` : `Lv ${lv}/${EVOLVE_2}`}</small></span>`;
 }
-// Fusions stay secret until you can do one; after that, bred hybrids stay listed.
+
+function fusionRow(k) {
+  const e = ELEMENTS[k], mine = bestOf(k), ready = fusable(S.monsters).includes(k), known = mine || ready;
+  const status = mine ? `<span class="fl-tag bred">${ic('check-circle')} Bred</span>`
+    : ready ? `<span class="btn gold sm">${ic('dna')} Fuse</span>`
+    : `<span class="fl-tag">${ic('lock')} Locked</span>`;
+  const attrs = mine ? `data-a="sheet" data-s="dex" data-el="${k}"` : ready ? `data-a="sheet" data-s="fuse" data-el="${k}"` : '';
+  return `<${attrs ? 'button' : 'div'} class="fl-row el-${k} ${ready ? 'ready' : ''} ${mine ? 'bred' : ''}" ${attrs}>
+    ${fzParent(e.parents[0])}<span class="fl-op">+</span>${fzParent(e.parents[1])}<span class="fl-op">${ic('dna')}</span>
+    <span class="fl-child ${known ? '' : 'secret'}"><span class="fl-ring">${mine ? monImg(mine) : known ? `<img src="${monsterImg(k, 0)}" alt="">` : '<b class="fl-q">?</b>'}</span>
+      <small>${known ? `${ic(e.icon)} ${e.name}` : '???'}</small></span>
+    <span class="fl-status">${status}</span>
+  </${attrs ? 'button' : 'div'}>`;
+}
+
 function fusionSection() {
-  const ready = fusable(S.monsters), shown = HYBRIDS.filter((k) => ready.includes(k) || S.monsters.some((m) => m.element === k));
-  if (!shown.length) return '';
-  return `<h3 class="h"><span>${ic('dna')} Fusion</span></h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
+  const shown = HYBRIDS.filter((k) => ELEMENTS[k].parents.some((p) => bestOf(p)));
+  const bred = HYBRIDS.filter((k) => bestOf(k)).length, hidden = HYBRIDS.length - shown.length;
+  return `<h3 class="h"><span>${ic('dna')} Fusion Lab</span><small>${bred} / ${HYBRIDS.length} bred</small></h3>
+    <section class="card fuselab">
+      <p class="fl-hint">Raise two monsters to their final form (Lv ${EVOLVE_2}) to breed a stronger hybrid. Both parents stay on your team.</p>
+      ${shown.map(fusionRow).join('')}
+      ${hidden ? `<div class="fl-more">${ic('lock')} ${hidden} secret recipe${hidden === 1 ? '' : 's'} left to discover</div>` : ''}
+    </section>`;
 }
 function fusionBanner() {
   const k = fusable(S.monsters)[0];
@@ -501,7 +498,6 @@ function meView() {
   return `<header class="title"><h1>Profile</h1><div>${S.admin ? `<button class="btn ghost sm" data-a="sheet" data-s="admin">${ic('shield-check')} Admin</button> ` : ''}<button class="btn ghost sm" data-a="sheet" data-s="settings">${ic('gear')} Settings</button></div></header>
     ${trainerCard(S.me)}
     <button class="btn gold wide" data-a="go" data-tab="shop">${ic('shopping-cart')} Shop · ${fmt(S.me.coins)} ${COIN}</button>
-    <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
     ${fusionSection()}
     ${dexSection()}
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
