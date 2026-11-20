@@ -423,7 +423,7 @@ function fusionCard(k) {
 function fusionSection() {
   const ready = fusable(S.monsters), shown = HYBRIDS.filter((k) => ready.includes(k) || S.monsters.some((m) => m.element === k));
   if (!shown.length) return '';
-  return `<h3 class="h">${ic('dna')} Fusion</h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
+  return `<h3 class="h"><span>${ic('dna')} Fusion</span></h3><section class="fusions">${shown.map(fusionCard).join('')}</section>`;
 }
 function fusionBanner() {
   const k = fusable(S.monsters)[0];
@@ -444,12 +444,56 @@ function fuseSheet(s) {
       <button class="btn gold big wide">${ic('dna')} Fuse ${e.parents.map((p) => ELEMENTS[p].name).join(' + ')}</button></form>`;
 }
 
-function dex() {
-  return `<div class="dex">${Object.keys(ELEMENTS).map((el) => {
-    const best = Math.max(-1, ...S.monsters.filter((m) => m.element === el).map((m) => levelInfo(m.xp).stage));
-    return [0, 1, 2, 3].map((st) => `<div class="${st <= best ? 'got' : ''} el-${el}">
-      <img src="${monsterImg(el, st)}" alt=""><small>${st <= best ? stageName(el, st) : '???'}</small></div>`).join('');
-  }).join('')}</div>`;
+// ---------- pagedex ----------
+// One compact card per monster family (scales as families are added); tap a card for its full evolution line.
+const STAGE_REQ = ['Egg', 'Lv 1', `Lv ${EVOLVE_1}`, `Lv ${EVOLVE_2}`];
+const bestStage = (el) => Math.max(-1, ...S.monsters.filter((m) => m.element === el).map((m) => levelInfo(m.xp).stage));
+const DEX_FILTERS = [['all', 'All'], ['starter', 'Starters'], ['hybrid', 'Hybrids']];
+
+function dexSection() {
+  const fams = Object.keys(ELEMENTS), filter = S.sub.dex || 'all';
+  const found = fams.reduce((n, el) => n + bestStage(el) + 1, 0), total = fams.length * 4;
+  const shown = fams.filter((el) => filter === 'all' || (filter === 'hybrid') === isHybrid(el));
+  return `<h3 class="h"><span>${ic('book')} Pagedex</span><small>${found} / ${total}</small></h3>
+    <section class="card dexbox">
+      ${bar(found, total, 'dexbar')}
+      <div class="dexfilter">${DEX_FILTERS.map(([k, n]) => `<button class="${filter === k ? 'on' : ''}" data-a="sub" data-tab="dex" data-sub="${k}">${n}</button>`).join('')}</div>
+      <div class="dex">${shown.map(dexCard).join('')}</div>
+    </section>`;
+}
+
+function dexCard(el) {
+  const e = ELEMENTS[el], best = bestStage(el), got = best >= 0, done = best >= 3;
+  return `<button class="dexcard el-${el} ${got ? 'got' : ''} ${done ? 'done' : ''}" data-a="sheet" data-s="dex" data-el="${el}">
+    ${isHybrid(el) ? `<span class="dx-tag">${ic('dna')}</span>` : ''}${done ? `<span class="dx-crown">${ic('crown')}</span>` : ''}
+    <span class="dx-orb"><img src="${monsterImg(el, got ? best : 3)}" alt="" loading="lazy"></span>
+    <b>${got ? `${ic(e.icon)} ${e.name}` : '???'}</b>
+    <small>${got ? stageName(el, best) : 'Not discovered'}</small>
+    <span class="dx-pips">${[0, 1, 2, 3].map((st) => `<i class="${st <= best ? 'on' : ''}"></i>`).join('')}</span>
+  </button>`;
+}
+
+function dexSheet(s) {
+  const el = s.el, e = ELEMENTS[el], best = bestStage(el), got = best >= 0;
+  const line = [0, 1, 2, 3].map((st) => `${st ? `<span class="dx-arrow">›</span>` : ''}
+    <div class="dx-stage ${st <= best ? 'got' : ''}"><span class="dx-orb"><img src="${monsterImg(el, st)}" alt=""></span>
+      <b>${st <= best ? stageName(el, st) : '???'}</b><small>${STAGE_REQ[st]}</small></div>`).join('');
+  const hint = isHybrid(el)
+    ? (got ? '' : 'A rare hybrid. Raise two of its parent families to their final form to breed it.')
+    : (got ? '' : 'Adopt this egg from the shop to start raising it.');
+  return `<div class="dx-head el-${el} ${got ? '' : 'locked'}">
+      <span class="dx-orb big"><img src="${monsterImg(el, got ? best : 3)}" alt=""></span>
+      <h2>${got ? `${ic(e.icon)} ${e.name} family` : '??? family'}</h2>
+      ${isHybrid(el) ? `<span class="tc-title" style="--tc:var(--el-soft)">${ic('dna')} Hybrid</span>` : ''}
+    </div>
+    <div class="dx-line el-${el}">${line}</div>
+    ${got ? `<p class="muted center">${e.blurb}</p>
+      <div class="dx-facts">
+        <div><small>Strong against</small><b>${e.beats.map((b) => `${elIc(b)} ${ELEMENTS[b].name}`).join(' ')}</b></div>
+        <div><small>Special move</small><b>${e.blast}</b></div>
+        <div><small>Perk · ${e.perk.name}</small><b>${perkText(el)}</b></div>
+        ${isHybrid(el) ? `<div><small>Bred from</small><b>${e.parents.map((p) => `${elIc(p)} ${ELEMENTS[p].name}`).join(' + ')}</b></div>` : ''}
+      </div>` : `<p class="muted center">${hint}</p>`}`;
 }
 
 function meView() {
@@ -459,7 +503,7 @@ function meView() {
     <button class="btn gold wide" data-a="go" data-tab="shop">${ic('shopping-cart')} Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
     ${fusionSection()}
-    <h3 class="h">Pagedex</h3><section class="card">${dex()}</section>
+    ${dexSection()}
     <h3 class="h">Badges <small>${ach.filter((a) => a.got).length} / ${ach.length}</small></h3>
     <section class="badges">${ach.map((a) => `<div class="${a.got ? 'got' : ''}"><span>${ic(a.icon)}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</section>`;
 }
@@ -660,7 +704,7 @@ function adminSheet(s) {
     <section class="card list">${players}</section>`;
 }
 
-const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet, admin: adminSheet };
+const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet, admin: adminSheet, dex: dexSheet };
 
 // ---------- overlays ----------
 function partyView(p) {
