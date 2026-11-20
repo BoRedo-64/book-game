@@ -263,11 +263,14 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
 .hab small { color: #fff; } .hab.on { border-color: #fff; } .hab:disabled { opacity: .5; }
 
 /* ---------- habitats ---------- */
-.hab-default.hab { background: linear-gradient(180deg, color-mix(in srgb, var(--el) 45%, #1b1440), #1b1440); }
-.hab-library { background: radial-gradient(2px 2px at 20% 18%, #fff, transparent), radial-gradient(2px 2px at 70% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 45% 30%, #fff, transparent), radial-gradient(2px 2px at 86% 34%, #fff, transparent), radial-gradient(1.5px 1.5px at 10% 42%, #fff, transparent), linear-gradient(180deg, #0b1040, #3a2a7a 70%, #6b4a2a) !important; }
-.hab-sunset { background: radial-gradient(60% 40% at 50% 62%, #ffd27a, transparent 70%), linear-gradient(180deg, #45207a, #d6506a 55%, #ff9a4a 75%, #5a2a50) !important; }
-.hab-crystal { background: radial-gradient(40% 30% at 20% 80%, #7af0ff88, transparent), radial-gradient(40% 30% at 80% 75%, #c77aff88, transparent), linear-gradient(180deg, #101a40, #1c3a6a 60%, #2a1a5a) !important; }
-.hab-clouds { background: radial-gradient(50% 18% at 25% 78%, #fff, transparent 70%), radial-gradient(60% 20% at 75% 84%, #fff, transparent 70%), linear-gradient(180deg, #3d8bff, #9fd4ff 70%, #e8f6ff) !important; }
+/* painted backdrops; the dark top/bottom fade keeps white text and cards readable */
+.hab-default, .hab-library, .hab-sunset, .hab-crystal, .hab-clouds {
+  background: linear-gradient(180deg, rgba(14, 10, 34, .55), transparent 30%, transparent 70%, rgba(14, 10, 34, .6)), var(--hab-img) center / cover no-repeat !important; }
+.hab-default { --hab-img: url('../assets/habitats/default.webp'); }
+.hab-library { --hab-img: url('../assets/habitats/library.webp'); }
+.hab-sunset { --hab-img: url('../assets/habitats/sunset.webp'); }
+.hab-crystal { --hab-img: url('../assets/habitats/crystal.webp'); }
+.hab-clouds { --hab-img: url('../assets/habitats/clouds.webp'); }
 
 /* ---------- celebration ---------- */
 .party { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 28px;
