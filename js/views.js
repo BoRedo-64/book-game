@@ -22,14 +22,7 @@ const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
 const bar = (a, b, cls = '') => `<div class="bar ${cls}"><i style="width:${pct(a, b)}%"></i></div>`;
 const plural = (n, w) => `${fmt(n)} ${w}${n === 1 ? '' : 's'}`;
 
-const ICONS = {
-  home: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
-  library: '<path d="M4 4h5v16H4zM10 4h5v16h-5zM16.5 5.5l4-1 3 14-4 1z" transform="scale(.9) translate(1 1)"/>',
-  arena: '<path d="M4 3h4l9 9-3 3-9-9zM20 3h-3l-3 3 3 3 3-3zM7 14l3 3-4 4-3-3zM17 14l-3 3 4 4 3-3z"/>',
-  friends: '<path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8.5 0a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM1 20c0-3.5 3-6 7-6s7 2.5 7 6v1H1zm16 1v-1c0-1.8-.7-3.4-1.8-4.6 3.6-.6 7.8 1 7.800 4.600v1z"/>',
-  me: '<path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm-9 9c0-4 4-7 9-7s9 3 9 7v1H3z"/>',
-};
-const icon = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+const NAV_ICONS = { home: 'house', library: 'books', arena: 'sword', friends: 'users', me: 'user-circle' };
 
 const monImg = (mon, cls = '') => {
   const { stage } = levelInfo(mon.xp);
@@ -691,7 +684,7 @@ export function view() {
   const b = badges();
   const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, me: meView, shop: shopView }[S.tab]();
   const nav = [['home', 'Home'], ['library', 'Library'], ['arena', 'Arena'], ['friends', 'Friends'], ['me', 'Me']].map(([k, n]) =>
-    `<button data-a="go" data-tab="${k}" class="${S.tab === k ? 'on' : ''}" ${S.tab === k ? 'aria-current="page"' : ''}>${icon(k)}<span>${n}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</button>`).join('');
+    `<button data-a="go" data-tab="${k}" class="${S.tab === k ? 'on' : ''}" ${S.tab === k ? 'aria-current="page"' : ''}>${ic(NAV_ICONS[k])}<span>${n}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</button>`).join('');
   return `<main class="screen" id="screen">${screen}</main><nav class="nav">${nav}</nav>
     ${S.sheet ? `<div class="scrim" data-a="closeSheet"></div><section class="sheet" role="dialog"><button class="grab" data-a="closeSheet" aria-label="Close"></button>${SHEETS[S.sheet.s](S.sheet)}</section>` : ''}
     ${S.battle ? battleView(S.battle) : ''}${S.party.length && !S.battle ? partyView(S.party[0]) : ''}`;
