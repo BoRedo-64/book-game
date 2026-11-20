@@ -453,7 +453,7 @@ function statsView() {
       <div class="sh-flame">${ic('fire')}<b>${st}</b></div>
       <div class="sh-main"><h2>${st ? `${fmt(st)}-day streak` : 'No streak yet'}</h2>
         <small>${lit ? 'You read today. Nice!' : st ? 'Read today to keep it going' : 'Read today to start one'} · Best ${plural(S.me.best_streak, 'day')}</small>
-        <div class="sh-week">${week.map((w) => `<span class="${w.on ? 'on' : ''} ${w.future ? 'future' : ''} ${w.today ? 'today' : ''}"><i>${w.on ? ic('check') : ''}</i><small>${w.n[0]}</small></span>`).join('')}</div>
+        <div class="sh-week">${week.map((w) => `<span class="${w.on ? 'on' : ''} ${w.future ? 'future' : ''} ${w.today ? 'today' : ''}"><i></i><small>${w.n[0]}</small></span>`).join('')}</div>
       </div>
       ${S.me.freezes ? `<span class="sh-freeze" title="Streak freezes">${ic('snowflake', 'i-ice')} ${S.me.freezes}</span>` : ''}
     </section>
