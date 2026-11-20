@@ -327,7 +327,7 @@ function friendsTab() {
       <button class="btn ghost sm" data-a="friendRemove" data-id="${f.id}" aria-label="Decline">${ic('x')}</button></div>`).join('')}</section>` : ''}
     ${S.friends.length ? `<h3 class="h">Friends</h3><section class="card list">${S.friends.map((f) => {
       const m = monsterOf(f), i = m && levelInfo(m.xp);
-      return `<button class="row" data-a="sheet" data-s="friend" data-id="${f.id}">${avatar(f)}
+      return `<button class="row" ${openProfile(f.id)}>${avatar(f)}
         <div><b>${h(f.username)}</b><small>${m ? `${h(m.name)} · ${i.level ? `Lv ${i.level}` : 'Egg'}` : 'No monster yet'} · ${ic('fire', 'i-fire')} ${f.streak}</small></div><span class="chev">›</span></button>`;
     }).join('')}</section>` : ''}
     ${S.outgoing.length ? `<h3 class="h">Sent</h3><section class="card list">${S.outgoing.map((f) => `<div class="row">${avatar(person(f.addressee))}
@@ -345,7 +345,7 @@ function friendsView() {
 
 // ---------- trainer card (your profile and every friend's) ----------
 /** data-attrs that open a player's trainer card: your own Me tab, or a friend's sheet. */
-const openProfile = (id) => (id === S.me.id ? 'data-a="go" data-tab="me"' : `data-a="sheet" data-s="friend" data-id="${id}"`);
+const openProfile = (id) => (id === S.me.id ? 'data-a="go" data-tab="me"' : `data-a="profile" data-id="${id}"`);
 
 function trainerCard(p) {
   const t = trainer(p), mon = monsterOf(p), lg = league(p.trophies), me = p.id === S.me.id;
@@ -517,18 +517,22 @@ function bookSheet(s) {
     <button class="btn danger wide" data-a="deleteBook" data-id="${b.id}">${s.confirm ? 'Tap again to delete' : 'Remove book'}</button>`;
 }
 
-function friendSheet(s) {
+// A player's profile, shown as its own page (with a back arrow) on top of the current tab.
+function profileView(s) {
   const f = S.people[s.id];
   if (!f) return '';
   const m = monsterOf(f), i = m && levelInfo(m.xp);
   const ship = S.ships.find((x) => x.requester === f.id || x.addressee === f.id);
   const isFriend = S.friends.some((x) => x.id === f.id);
-  return `${trainerCard(f)}
+  return `<div class="profilepage">
+    <header class="title pagehead"><button class="back" data-a="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h1>${h(f.username)}</h1></header>
+    ${trainerCard(f)}
     <p class="hint">This week: <b>${fmt(weekPages(f.id))}</b> pages (you: ${fmt(weekPages(S.me.id))})</p>
     ${s.books?.length ? `<h3 class="h">Reading now</h3>${s.books.map((b) => `<div class="row">${cover(b, 'sm')}<div><b>${h(b.title)}</b><small>${h(b.author)} · ${Math.round(pct(b.current_page, b.total_pages))}%</small></div></div>`).join('')}` : ''}
     ${isFriend ? `<div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>${ic('sword')} ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
       <button class="btn gold" data-a="sheet" data-s="newduel" data-id="${f.id}">${ic('flag-checkered')} Duel</button></div>
-    <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>` : ''}`;
+    <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>` : ''}
+  </div>`;
 }
 
 function newDuelSheet(s) {
@@ -656,7 +660,7 @@ function adminSheet(s) {
     <section class="card list">${players}</section>`;
 }
 
-const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, friend: friendSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet, admin: adminSheet };
+const SHEETS = { log: logSheet, addbook: addBookSheet, book: bookSheet, newduel: newDuelSheet, egg: eggSheet, settings: settingsSheet, fuse: fuseSheet, admin: adminSheet };
 
 // ---------- overlays ----------
 function partyView(p) {
@@ -715,9 +719,10 @@ export function view() {
   if (active()) document.body.dataset.el = active().element;
   const b = badges();
   const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, me: meView, shop: shopView }[S.tab]();
+  const page = S.profile && S.people[S.profile.id] ? profileView(S.profile) : screen;
   const nav = [['home', 'Home'], ['library', 'Library'], ['arena', 'Arena'], ['friends', 'Friends'], ['me', 'Me']].map(([k, n]) =>
     `<button data-a="go" data-tab="${k}" class="${S.tab === k ? 'on' : ''}" ${S.tab === k ? 'aria-current="page"' : ''}>${ic(NAV_ICONS[k])}<span>${n}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</button>`).join('');
-  return `<main class="screen" id="screen">${screen}</main><nav class="nav">${nav}</nav>
+  return `<main class="screen" id="screen">${page}</main><nav class="nav">${nav}</nav>
     ${S.sheet ? `<div class="scrim" data-a="closeSheet"></div><section class="sheet" role="dialog"><button class="grab" data-a="closeSheet" aria-label="Close"></button>${SHEETS[S.sheet.s](S.sheet)}</section>` : ''}
     ${S.battle ? battleView(S.battle) : ''}${S.party.length && !S.battle ? partyView(S.party[0]) : ''}`;
 }

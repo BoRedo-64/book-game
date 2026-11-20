@@ -325,6 +325,11 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; } inpu
 .tc-foot { display: flex; justify-content: space-between; gap: 8px; margin: 12px 16px 0; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--muted); }
 .tc-foot span { display: inline-flex; align-items: center; gap: 5px; } .tc-foot b { color: var(--text); }
 .avbtn { flex: none; border-radius: 50%; }
+.profilepage { display: grid; gap: 12px; animation: pagein .28s cubic-bezier(.2, .8, .2, 1); } .profilepage.still { animation: none; }
+.profilepage .hint { margin: 0; } .profilepage .h { margin: 4px 2px 0; } .profilepage .btns { margin-top: 4px; }
+.pagehead { justify-content: flex-start; gap: 10px; }
+.pagehead h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes pagein { from { opacity: 0; transform: translateX(40px); } }
 
 /* ---------- habitats ---------- */
 /* painted backdrops; the dark top/bottom fade keeps white text and cards readable */

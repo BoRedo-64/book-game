@@ -16,9 +16,11 @@ let lastLoad = 0, toastTimer, lastParty = null;
 
 function render() {
   const hadSheet = !!root.querySelector('.sheet'), sheetScroll = root.querySelector('.sheet')?.scrollTop;
-  const hadBattle = !!root.querySelector('.battle');
+  const hadBattle = !!root.querySelector('.battle'), hadPage = root.querySelector('.profilepage')?.dataset.id;
   root.innerHTML = view();
   if (hadBattle) root.querySelector('.battle')?.classList.add('still'); // only fade in when the fight starts, not on every move
+  const page = root.querySelector('.profilepage');
+  if (page) { page.dataset.id = S.profile.id; if (hadPage === S.profile.id) page.classList.add('still'); } // only slide in when first opened
   const sheet = root.querySelector('.sheet');
   if (sheet && hadSheet) { // same sheet re-rendered: skip the slide-in and keep its scroll position
     sheet.classList.add('still'); root.querySelector('.scrim').classList.add('still');
@@ -159,12 +161,19 @@ async function endBattle(won) {
 }
 
 // ---------- click actions ----------
+function closeProfile() {
+  if (!S.profile) return;
+  const y = S.profile.from || 0;
+  S.profile = null; S.sheet = null; render(); window.scrollTo(0, y);
+}
+window.addEventListener('popstate', closeProfile);
+
 const A = {
   authMode(d) { S.auth = { mode: d.mode, error: '', name: val('au-name') }; render(); },
   pickStarter(d) { S.starter = { element: d.el, name: val('st-name') }; render(); },
 
   go(d) {
-    S.tab = d.tab; S.sheet = null;
+    S.tab = d.tab; S.sheet = null; S.profile = null;
     if (d.sub) S.sub[d.tab] = d.sub;
     render(); window.scrollTo(0, 0);
     refreshIfStale(30000);
@@ -174,12 +183,17 @@ const A = {
     const { a, ...rest } = d;
     S.sheet = rest; render();
     if (rest.s === 'admin') loadAdmin().catch((e) => toast(h(e.message)));
-    if (rest.s === 'friend') {
-      db.select('books', { owner: rest.id, status: 'reading' }, { limit: 3 }).then((books) => {
-        if (S.sheet?.s === 'friend' && S.sheet.id === rest.id) { S.sheet.books = books; render(); }
-      }).catch(() => {});
-    }
   },
+  // A player's profile page. It gets a browser history entry so the phone's back gesture closes it.
+  profile(d) {
+    S.profile = { id: d.id, from: window.scrollY }; S.sheet = null;
+    history.pushState({ profile: d.id }, '');
+    render(); window.scrollTo(0, 0);
+    db.select('books', { owner: d.id, status: 'reading' }, { limit: 3 }).then((books) => {
+      if (S.profile?.id === d.id) { S.profile.books = books; render(); }
+    }).catch(() => {});
+  },
+  back() { if (history.state?.profile) history.back(); else closeProfile(); },
   closeSheet() { S.sheet = null; render(); },
 
   async ban(d) {
@@ -283,9 +297,9 @@ const A = {
   },
   async friendAccept(d) { await db.update('friendships', d.id, { status: 'accepted' }); await reload(); toast('You are now friends!'); },
   async friendRemove(d) {
-    if (d.confirm && !S.sheet?.confirm) { S.sheet.confirm = true; return render(); }
+    if (d.confirm && !S.profile?.confirm) { S.profile.confirm = true; return render(); }
     await db.remove('friendships', { id: d.id });
-    S.sheet = null; await reload();
+    S.sheet = null; if (S.profile) A.back(); await reload();
   },
 
   duelPick(d) { S.sheet = { ...S.sheet, ...(d.days ? { days: +d.days } : { id: d.id }) }; render(); },
