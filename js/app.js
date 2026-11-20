@@ -495,6 +495,23 @@ async function run(fn, ...args) {
   } finally { S.busy = false; }
 }
 
+// Chart readouts: hovering or tapping a bar/point shows its value in the chart's top line.
+function chartTip(e) {
+  const hit = e.target.closest?.('.chart [data-tip]'), chart = e.target.closest?.('.chart');
+  if (!chart) return;
+  chart.querySelectorAll('.hl').forEach((x) => x.classList.remove('hl'));
+  const read = chart.querySelector('.chart-read');
+  if (hit) { hit.classList.add('hl'); read.innerHTML = hit.dataset.tip; read.classList.add('on'); }
+}
+document.addEventListener('pointerover', chartTip);
+document.addEventListener('pointerdown', chartTip);
+document.addEventListener('pointerout', (e) => {
+  const chart = e.target.closest?.('.chart');
+  if (!chart || e.pointerType !== 'mouse' || chart.contains(e.relatedTarget)) return;
+  chart.querySelectorAll('.hl').forEach((x) => x.classList.remove('hl'));
+  const read = chart.querySelector('.chart-read'); read.innerHTML = read.dataset.default; read.classList.remove('on');
+});
+
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-a]');
   if (el && !el.disabled) run(A[el.dataset.a], { ...el.dataset }, el);

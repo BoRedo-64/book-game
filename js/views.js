@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
-  HABITATS, DUEL_TYPES, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, DAILY_PAGE_LIMIT, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, diffDays, streakBonus,
+  HABITATS, DUEL_TYPES, addDays, parseDay, weekStart, perkText, guardFactor, STARTERS, fusable, isHybrid, RARE_WILD_CHANCE, RARE_WILD_CHANCE_HYBRID, HATCH_PAGES, DAILY_PAGE_LIMIT, MAX_ENERGY, PAGES_PER_ENERGY, EVOLVE_1, EVOLVE_2, diffDays, streakBonus,
 } from './game.js';
 import { db } from './db.js';
 import { prefs } from './audio.js';
@@ -22,7 +22,7 @@ const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
 const bar = (a, b, cls = '') => `<div class="bar ${cls}"><i style="width:${pct(a, b)}%"></i></div>`;
 const plural = (n, w) => `${fmt(n)} ${w}${n === 1 ? '' : 's'}`;
 
-const NAV_ICONS = { home: 'house', library: 'books', arena: 'sword', friends: 'users', me: 'user-circle' };
+const NAV_ICONS = { home: 'house', library: 'books', arena: 'sword', friends: 'users', stats: 'chart-bar', me: 'user-circle' };
 
 const monImg = (mon, cls = '') => {
   const { stage } = levelInfo(mon.xp);
@@ -341,6 +341,158 @@ function friendsView() {
     <div class="seg">${[['feed', 'Feed'], ['rank', 'Ranking'], ['list', 'Friends']].map(([k, n]) =>
       `<button data-a="sub" data-tab="friends" data-sub="${k}" class="${sub === k ? 'on' : ''}">${n}${k === 'list' && b.friends ? `<em>${b.friends}</em>` : ''}</button>`).join('')}</div>
     ${sub === 'feed' ? feedTab() : sub === 'rank' ? rankTab() : friendsTab()}`;
+}
+
+// ---------- stats ----------
+// Charts are inline SVG in the monster's element color. Every bar/point carries data-tip;
+// app.js shows it in the chart's readout line on hover/tap (no re-render).
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const shortDate = (d) => parseDay(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const longDate = (d) => parseDay(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+const niceMax = (v) => { const p = 10 ** Math.floor(Math.log10(Math.max(v, 1))); return [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((n) => n * p >= v) * p; };
+const W = 320, PAD_L = 30, PAD_B = 22, PAD_T = 8;
+
+function readsByDay() {
+  const m = {};
+  for (const l of S.logs) if (l.user_id === S.me.id) m[l.day] = (m[l.day] || 0) + l.pages;
+  return m;
+}
+
+/** Vertical bar chart. items: [{ v, label?, tip, on? }]; goal draws a dashed reference line. */
+function barChart(items, { goal = 0, h = 150, read = '' } = {}) {
+  const max = niceMax(Math.max(goal * 1.15, ...items.map((i) => i.v), 5)), ch = h - PAD_B - PAD_T;
+  const y = (v) => PAD_T + ch - (v / max) * ch, slot = (W - PAD_L) / items.length, bw = Math.max(3, Math.min(26, slot - 2));
+  const grid = [0, max / 2, max].map((t) => `<line x1="${PAD_L}" x2="${W}" y1="${y(t)}" y2="${y(t)}" class="c-grid"/>
+    <text x="${PAD_L - 6}" y="${y(t) + 3.5}" class="c-ax" text-anchor="end">${fmt(Math.round(t))}</text>`).join('');
+  const bars = items.map((it, i) => {
+    const x = PAD_L + i * slot + (slot - bw) / 2, top = y(it.v), r = Math.min(4, bw / 2), hgt = PAD_T + ch - top;
+    const mark = it.v > 0 ? `<path class="c-bar ${it.on ? 'on' : ''}" d="M${x},${PAD_T + ch}V${top + r}q0,-${r} ${r},-${r}h${bw - 2 * r}q${r},0 ${r},${r}V${PAD_T + ch}Z"/>` : '';
+    return `<g class="c-hit" data-tip="${h_(it.tip)}"><rect x="${PAD_L + i * slot}" y="${PAD_T}" width="${slot}" height="${ch}" fill="transparent"/>${hgt > 0 ? mark : ''}
+      ${it.label ? `<text x="${x + bw / 2}" y="${h - 6}" class="c-ax" text-anchor="middle">${it.label}</text>` : ''}</g>`;
+  }).join('');
+  const goalLine = goal ? `<line x1="${PAD_L}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}" class="c-goal"/>` : '';
+  return `<div class="chart"><p class="chart-read" data-default="${h_(read)}">${read}</p>
+    <svg viewBox="0 0 ${W} ${h}" role="img">${grid}${goalLine}${bars}</svg></div>`;
+}
+
+/** Area/line chart of a running total, with a tap target per point. */
+function lineChart(points, { h = 150, read = '' } = {}) {
+  const vals = points.map((p) => p.v), lo = Math.min(...vals), hiV = Math.max(...vals);
+  const min = Math.max(0, Math.floor(lo - (hiV - lo) * 0.15)), max = niceMax(hiV + (hiV - min) * 0.1) || 1;
+  const ch = h - PAD_B - PAD_T, step = (W - PAD_L) / Math.max(1, points.length - 1);
+  const x = (i) => PAD_L + i * step, y = (v) => PAD_T + ch - ((v - min) / Math.max(1, max - min)) * ch;
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const grid = [min, (min + max) / 2, max].map((t) => `<line x1="${PAD_L}" x2="${W}" y1="${y(t)}" y2="${y(t)}" class="c-grid"/>
+    <text x="${PAD_L - 6}" y="${y(t) + 3.5}" class="c-ax" text-anchor="end">${t >= 1000 ? `${(t / 1000).toFixed(t >= 10000 ? 0 : 1)}k` : Math.round(t)}</text>`).join('');
+  const last = points.length - 1;
+  const labels = [0, Math.round(last / 2), last].map((i) => `<text x="${x(i)}" y="${h - 6}" class="c-ax" text-anchor="${i === 0 ? 'start' : i === last ? 'end' : 'middle'}">${points[i].label}</text>`).join('');
+  const hits = points.map((p, i) => `<g class="c-hit c-pt" data-tip="${h_(p.tip)}"><rect x="${x(i) - step / 2}" y="${PAD_T}" width="${step}" height="${ch}" fill="transparent"/>
+    <line class="c-cross" x1="${x(i)}" x2="${x(i)}" y1="${PAD_T}" y2="${PAD_T + ch}"/><circle cx="${x(i)}" cy="${y(p.v)}" r="4.5" class="c-dot"/></g>`).join('');
+  return `<div class="chart"><p class="chart-read" data-default="${h_(read)}">${read}</p>
+    <svg viewBox="0 0 ${W} ${h}" role="img"><defs><linearGradient id="c-fill" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="var(--el)" stop-opacity=".45"/><stop offset="1" stop-color="var(--el)" stop-opacity="0"/></linearGradient></defs>
+      ${grid}<path d="${line}L${x(last)},${PAD_T + ch}L${x(0)},${PAD_T + ch}Z" fill="url(#c-fill)"/><path d="${line}" class="c-line"/>
+      <circle cx="${x(last)}" cy="${y(points[last].v)}" r="4.5" class="c-dot end"/>${labels}${hits}</svg></div>`;
+}
+const h_ = (s) => h(s).replace(/&lt;(\/?b)&gt;/g, '<$1>'); // tips may use <b>; everything else stays escaped
+
+function statsView() {
+  const by = readsByDay(), t = today(), goal = S.me.daily_goal, range = S.sub.stats;
+  const days = (n) => Array.from({ length: n }, (_, i) => addDays(t, i - n + 1));
+  const sum = (ds) => ds.reduce((n, d) => n + (by[d] || 0), 0);
+  const last30 = days(30), read30 = last30.filter((d) => by[d]).length;
+  const best = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+  const avg30 = Math.round(sum(last30) / 30);
+  const st = streak(), lit = S.me.last_read === t;
+
+  // streak strip: this week Mon..Sun
+  const wk = weekStart(t), week = DOW.map((n, i) => { const d = addDays(wk, i); return { n, d, on: !!by[d], future: d > t, today: d === t }; });
+
+  // main chart
+  let items, chartRead, chartGoal;
+  if (range === '90') {
+    const start = addDays(weekStart(t), -7 * 12);
+    items = Array.from({ length: 13 }, (_, i) => {
+      const ws = addDays(start, i * 7), v = sum(Array.from({ length: 7 }, (_, k) => addDays(ws, k)));
+      return { v, on: v >= goal * 7, label: i % 3 === 0 || i === 12 ? shortDate(ws) : '', tip: `Week of ${shortDate(ws)} · <b>${fmt(v)}</b> pages` };
+    });
+    chartGoal = goal * 7;
+    chartRead = `<b>${fmt(items.reduce((n, i) => n + i.v, 0))}</b> pages in 13 weeks`;
+  } else {
+    const ds = days(+range);
+    items = ds.map((d, i) => ({ v: by[d] || 0, on: (by[d] || 0) >= goal,
+      label: range === '7' ? DOW[(parseDay(d).getDay() + 6) % 7] : (ds.length - 1 - i) % 7 === 0 ? shortDate(d) : '',
+      tip: `${longDate(d)} · <b>${fmt(by[d] || 0)}</b> pages` }));
+    chartGoal = goal;
+    chartRead = `<b>${fmt(sum(ds))}</b> pages · ${Math.round(sum(ds) / ds.length)} a day on average`;
+  }
+
+  // running total (all-time total, walked back through the 90 days of logs we have)
+  const d90 = days(90);
+  let run = S.me.total_pages - sum(d90);
+  const cum = d90.map((d) => { run += by[d] || 0; return { v: run, label: shortDate(d), tip: `${longDate(d)} · <b>${fmt(run)}</b> pages total` }; });
+
+  // weekday habits
+  const dowTot = [0, 0, 0, 0, 0, 0, 0], dowN = [0, 0, 0, 0, 0, 0, 0];
+  for (const d of d90) { const k = (parseDay(d).getDay() + 6) % 7; dowTot[k] += by[d] || 0; dowN[k]++; }
+  const dowAvg = dowTot.map((v, i) => Math.round(v / Math.max(1, dowN[i]))), topDow = dowAvg.indexOf(Math.max(...dowAvg));
+  const dowItems = dowAvg.map((v, i) => ({ v, on: i === topDow && v > 0, label: DOW[i], tip: `${DOW[i]} · <b>${v}</b> pages on average` }));
+
+  // books + battles
+  const fin = S.books.filter((b) => b.status === 'finished'), reading = S.books.filter((b) => b.status === 'reading').length;
+  const wish = S.books.filter((b) => b.status === 'wishlist').length, rated = fin.filter((b) => b.rating);
+  const avgRating = rated.length ? rated.reduce((n, b) => n + b.rating, 0) / rated.length : 0;
+  const longest = [...fin].sort((a, b) => b.total_pages - a.total_pages)[0];
+  const myBattles = S.battles.map((b) => (b.attacker === S.me.id ? b.won : !b.won));
+  const duelsWon = S.duels.filter((d) => d.status === 'done' && d.winner === S.me.id).length;
+  const lg = league(S.me.trophies);
+
+  const kpi = (icon, c, n, label, sub = '') => `<div class="kpi" style="--c:${c}"><span>${ic(icon)}</span><b>${n}</b><small>${label}</small>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  return `<header class="title"><h1>Stats</h1></header>
+    <section class="streakhero ${lit ? 'lit' : ''}">
+      <div class="sh-flame">${ic('fire')}<b>${st}</b></div>
+      <div class="sh-main"><h2>${st ? `${fmt(st)}-day streak` : 'No streak yet'}</h2>
+        <small>${lit ? 'You read today. Nice!' : st ? 'Read today to keep it going' : 'Read today to start one'} · Best ${plural(S.me.best_streak, 'day')}</small>
+        <div class="sh-week">${week.map((w) => `<span class="${w.on ? 'on' : ''} ${w.future ? 'future' : ''} ${w.today ? 'today' : ''}"><i>${w.on ? ic('check') : ''}</i><small>${w.n[0]}</small></span>`).join('')}</div>
+      </div>
+      ${S.me.freezes ? `<span class="sh-freeze" title="Streak freezes">${ic('snowflake', 'i-ice')} ${S.me.freezes}</span>` : ''}
+    </section>
+    <section class="kpis">
+      ${kpi('book-open', '#5fb4ff', fmt(S.me.total_pages), 'pages read', 'all time')}
+      ${kpi('books', '#58d68d', fmt(S.me.books_done), 'books finished', reading ? `${reading} in progress` : '')}
+      ${kpi('lightning', '#ffc93c', avg30, 'pages / day', 'last 30 days')}
+      ${kpi('star', '#ff8a3d', best ? fmt(best[1]) : 0, 'best day', best ? shortDate(best[0]) : '')}
+      ${kpi('check-circle', '#b98cff', `${read30}<small>/30</small>`, 'days read', 'last 30 days')}
+      ${kpi('fire', '#ff5d6c', S.me.best_streak, 'best streak', 'days')}
+    </section>
+    <h3 class="h"><span>${ic('chart-bar')} Pages read</span></h3>
+    <section class="card chartcard">
+      <div class="dexfilter">${[['7', '7 days'], ['30', '30 days'], ['90', '3 months']].map(([k, n]) => `<button class="${range === k ? 'on' : ''}" data-a="sub" data-tab="stats" data-sub="${k}">${n}</button>`).join('')}</div>
+      ${barChart(items, { goal: chartGoal, read: chartRead })}
+      <div class="c-key"><span><i class="k-bar"></i> ${range === '90' ? 'Weekly' : 'Daily'} goal hit</span><span><i class="k-bar off"></i> Under goal</span><span><i class="k-goal"></i> Goal (${fmt(chartGoal)})</span></div>
+    </section>
+    <h3 class="h"><span>${ic('shooting-star')} Total pages</span><small>last 3 months</small></h3>
+    <section class="card chartcard">${lineChart(cum, { read: `<b>+${fmt(sum(d90))}</b> pages in 3 months · <b>${fmt(S.me.total_pages)}</b> total` })}</section>
+    <h3 class="h"><span>${ic('sparkle')} Reading habits</span></h3>
+    <section class="card chartcard">${barChart(dowItems, { h: 130, read: dowAvg[topDow] ? `You read the most on <b>${['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'][topDow]}</b>` : 'Log some reading to see your habits' })}</section>
+    <h3 class="h"><span>${ic('books')} Bookshelf</span></h3>
+    <section class="card shelfstats">
+      <div class="shelfbar">${[['finished', fin.length, 'Finished'], ['reading', reading, 'Reading'], ['wishlist', wish, 'Wishlist']].map(([k, n, l]) =>
+        n ? `<i class="sb-${k}" style="flex:${n}" title="${l}: ${n}"></i>` : '').join('') || '<i class="sb-empty" style="flex:1"></i>'}</div>
+      <div class="shelfkey">${[['finished', fin.length, 'Finished'], ['reading', reading, 'Reading'], ['wishlist', wish, 'Wishlist']].map(([k, n, l]) => `<span><i class="sb-${k}"></i><b>${n}</b> ${l}</span>`).join('')}</div>
+      <div class="shelfrows">
+        <div><small>Average rating</small><b class="stars">${avgRating ? `${[1, 2, 3, 4, 5].map((n) => ic('star', n <= Math.round(avgRating) ? '' : 'off')).join('')} <span>${avgRating.toFixed(1)}</span>` : '—'}</b></div>
+        <div><small>Longest book finished</small><b>${longest ? `${h(longest.title)} <span>· ${fmt(longest.total_pages)} p.</span>` : '—'}</b></div>
+      </div>
+    </section>
+    <h3 class="h"><span>${ic('sword')} Battle record</span></h3>
+    <section class="kpis">
+      ${kpi('trophy', '#ffc93c', fmt(S.me.trophies), 'trophies', `${lg.name} league`)}
+      ${kpi('boxing-glove', '#ff5d6c', fmt(S.me.wins), 'battles won', 'all time')}
+      ${kpi('flag-checkered', '#5fb4ff', duelsWon, 'duels won', 'recent')}
+    </section>
+    ${myBattles.length ? `<section class="card form"><small>Last ${myBattles.length} battles</small><div>${myBattles.map((w) => `<i class="${w ? 'w' : 'l'}">${w ? 'W' : 'L'}</i>`).join('')}</div>
+      <small>${Math.round((myBattles.filter(Boolean).length / myBattles.length) * 100)}% won</small></section>` : ''}`;
 }
 
 // ---------- trainer card (your profile and every friend's) ----------
@@ -758,9 +910,9 @@ export function view() {
   if (!S.monsters.length) return starterView();
   if (active()) document.body.dataset.el = active().element;
   const b = badges();
-  const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, me: meView, shop: shopView }[S.tab]();
+  const screen = { home: homeView, library: libraryView, arena: arenaView, friends: friendsView, stats: statsView, me: meView, shop: shopView }[S.tab]();
   const page = S.profile && S.people[S.profile.id] ? profileView(S.profile) : screen;
-  const nav = [['home', 'Home'], ['library', 'Library'], ['arena', 'Arena'], ['friends', 'Friends'], ['me', 'Me']].map(([k, n]) =>
+  const nav = [['home', 'Home'], ['library', 'Library'], ['arena', 'Arena'], ['friends', 'Friends'], ['stats', 'Stats'], ['me', 'Me']].map(([k, n]) =>
     `<button data-a="go" data-tab="${k}" class="${S.tab === k ? 'on' : ''}" ${S.tab === k ? 'aria-current="page"' : ''}>${ic(NAV_ICONS[k])}<span>${n}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</button>`).join('');
   return `<main class="screen" id="screen">${page}</main><nav class="nav">${nav}</nav>
     ${S.sheet ? `<div class="scrim" data-a="closeSheet"></div><section class="sheet" role="dialog"><button class="grab" data-a="closeSheet" aria-label="Close"></button>${SHEETS[S.sheet.s](S.sheet)}</section>` : ''}
