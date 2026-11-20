@@ -1,7 +1,7 @@
 // Shared app state + values derived from it.
 import { db } from './db.js';
 import {
-  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS, ELEMENTS, DAILY_PAGE_LIMIT,
+  dayStr, addDays, diffDays, weekStart, levelInfo, hash, raidFor, liveStreak, ACHIEVEMENTS, ELEMENTS, DAILY_PAGE_LIMIT, trainerLevel,
 } from './game.js';
 
 export const S = {
@@ -20,6 +20,15 @@ export const person = (id) => (id === S.me.id ? S.me : S.people[id]);
 export const nameOf = (id) => (id === S.me.id ? 'You' : person(id)?.username || 'Someone');
 export const monsterOf = (profile) =>
   profile.id === S.me.id ? active() : S.fmon[profile.active_monster] || Object.values(S.fmon).find((m) => m.owner === profile.id);
+
+/** Every monster a player owns (yours, or a friend's from the loaded friend monsters). */
+export const monstersOf = (profile) =>
+  profile.id === S.me.id ? S.monsters : Object.values(S.fmon).filter((m) => m.owner === profile.id);
+/** Trainer level, built from the total XP of all the player's monsters. */
+export function trainer(profile) {
+  const monsters = monstersOf(profile);
+  return { ...trainerLevel(monsters.reduce((n, m) => n + m.xp, 0)), monsters };
+}
 
 export function pagesBetween(uid, from, to = '9999') {
   const logs = uid === S.me.id ? S.logs : S.flogs;

@@ -73,6 +73,27 @@ export function levelInfo(xp) {
   return { level, stage, cur: x, need: need(level) };
 }
 
+// ---------- trainer level ----------
+// Separate from monster levels: built from the XP of every monster the trainer owns.
+export const TRAINER_MAX = 99;
+const trainerNeed = (level) => 60 + 30 * level; // XP to go from trainer `level` to `level + 1`
+export const TITLES = [
+  { min: 45, name: 'Living Legend', icon: 'crown', color: '#ff6bd6' },
+  { min: 30, name: 'Grand Sage', icon: 'shooting-star', color: '#b98cff' },
+  { min: 20, name: 'Lore Keeper', icon: 'bank', color: '#5fd4ff' },
+  { min: 15, name: 'Scholar', icon: 'graduation-cap', color: '#58d68d' },
+  { min: 10, name: 'Bookworm', icon: 'books', color: '#ffc93c' },
+  { min: 6, name: 'Chapter Chaser', icon: 'book-open', color: '#ff9a4a' },
+  { min: 3, name: 'Page Turner', icon: 'book', color: '#e0b48a' },
+  { min: 1, name: 'Fresh Bookmark', icon: 'file-text', color: '#c9c2ec' },
+];
+export function trainerLevel(xp) {
+  let x = xp, level = 1;
+  while (level < TRAINER_MAX && x >= trainerNeed(level)) { x -= trainerNeed(level); level++; }
+  const max = level >= TRAINER_MAX;
+  return { level, xp, cur: max ? 1 : x, need: max ? 1 : trainerNeed(level), max, title: TITLES.find((t) => level >= t.min) };
+}
+
 export function xpForLevel(level) {
   let xp = HATCH_PAGES;
   for (let l = 1; l < level; l++) xp += need(l);

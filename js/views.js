@@ -1,7 +1,7 @@
 // All screens, rendered as HTML strings from state.
 import {
   S, active, person, nameOf, monsterOf, pagesToday, pagesLeftToday, weekPages, streak, quests, raid, ranking,
-  achievements, duelView, badges, today, daily, foughtToday,
+  achievements, duelView, badges, today, daily, foughtToday, trainer,
 } from './state.js';
 import {
   ELEMENTS, levelInfo, stageName, monsterImg, timeAgo, fighter, elementMult, MOVES, league, hash,
@@ -299,7 +299,7 @@ function feedTab() {
   if (!S.events.length) return '<p class="emptynote">Your feed is quiet. Log some reading or add friends to see what they’re up to.</p>';
   return `<section class="feed">${S.events.map((e) => {
     const n = S.cheers.filter((c) => c.event_id === e.id), mine = n.some((c) => c.user_id === S.me.id);
-    return `<article class="card post">${avatar(person(e.user_id))}
+    return `<article class="card post"><button class="avbtn" ${openProfile(e.user_id)} aria-label="View ${h(nameOf(e.user_id))}’s profile">${avatar(person(e.user_id))}</button>
       <div><p>${['evolve', 'level'].includes(e.type) ? (e.user_id === S.me.id ? 'Your' : `${h(nameOf(e.user_id))}’s`) : `<b>${h(nameOf(e.user_id))}</b>`} ${eventLine(e)}</p><small>${timeAgo(e.created_at)}</small></div>
       <button class="cheer ${mine ? 'on' : ''}" data-a="cheer" data-id="${e.id}" aria-label="Cheer">${ic('hands-clapping')}${n.length ? ` <b>${n.length}</b>` : ''}</button>
     </article>`;
@@ -309,10 +309,10 @@ function feedTab() {
 function rankTab() {
   const rows = ranking();
   return `<p class="hint">Pages read since Monday. Resets every week.</p>
-    <section class="card list">${rows.map((r, i) => `<div class="row ${r.p.id === S.me.id ? 'me' : ''}">
+    <section class="card list">${rows.map((r, i) => `<button class="row ${r.p.id === S.me.id ? 'me' : ''}" ${openProfile(r.p.id)}>
       <span class="rank r${i + 1}">${['gold', 'silver', 'bronze'][i] ? ic('medal', `i-${['gold', 'silver', 'bronze'][i]}`) : i + 1}</span>${avatar(r.p)}
       <div><b>${h(nameOf(r.p.id))}</b><small>${ic('fire', 'i-fire')} ${r.p.id === S.me.id ? streak() : r.p.streak} day streak</small></div>
-      <b class="num">${fmt(r.pages)}<small> pages</small></b></div>`).join('')}</section>
+      <b class="num">${fmt(r.pages)}<small> pages</small></b></button>`).join('')}</section>
     ${rows.length < 2 ? '<p class="emptynote">Add friends to make this a real race.</p>' : ''}`;
 }
 
@@ -341,6 +341,48 @@ function friendsView() {
     <div class="seg">${[['feed', 'Feed'], ['rank', 'Ranking'], ['list', 'Friends']].map(([k, n]) =>
       `<button data-a="sub" data-tab="friends" data-sub="${k}" class="${sub === k ? 'on' : ''}">${n}${k === 'list' && b.friends ? `<em>${b.friends}</em>` : ''}</button>`).join('')}</div>
     ${sub === 'feed' ? feedTab() : sub === 'rank' ? rankTab() : friendsTab()}`;
+}
+
+// ---------- trainer card (your profile and every friend's) ----------
+/** data-attrs that open a player's trainer card: your own Me tab, or a friend's sheet. */
+const openProfile = (id) => (id === S.me.id ? 'data-a="go" data-tab="me"' : `data-a="sheet" data-s="friend" data-id="${id}"`);
+
+function trainerCard(p) {
+  const t = trainer(p), mon = monsterOf(p), lg = league(p.trophies), me = p.id === S.me.id;
+  const ach = me && achievements();
+  const stats = [
+    ['book-open', fmt(p.total_pages), 'pages read', '#5fb4ff'],
+    ['books', fmt(p.books_done), 'books finished', '#58d68d'],
+    ['egg', t.monsters.length, t.monsters.length === 1 ? 'monster' : 'monsters', '#b98cff'],
+    ['fire', p.best_streak, 'best streak', '#ff8a3d'],
+    ['sword', fmt(p.wins), 'battles won', '#ff5d6c'],
+    ['trophy', fmt(p.trophies), 'trophies', '#ffc93c'],
+  ];
+  const team = [...t.monsters].sort((a, b) => b.xp - a.xp);
+  return `<section class="tcard ${mon ? 'el-' + mon.element : ''}" style="--tc:${t.title.color}">
+    <div class="tc-hero hab-${h(p.habitat || 'default')}">
+      <span class="tc-streak">${ic('fire', 'i-fire')} <b>${me ? streak() : p.streak}</b></span>
+      <span class="tc-league">${lgIc(lg)} ${lg.name}</span>
+      <div class="tc-mon">${mon ? monImg(mon) : ic('egg')}</div>
+      <span class="tc-lv" title="Trainer level"><small>LV</small><b>${t.level}</b></span>
+    </div>
+    <div class="tc-id">
+      <h2>${h(p.username)}</h2>
+      <span class="tc-title">${ic(t.title.icon)} ${t.title.name}</span>
+    </div>
+    <div class="tc-xp">
+      <div><b>${ic('sparkle')} ${fmt(t.xp)} XP</b><small>${t.max ? 'Max level!' : `${fmt(t.need - t.cur)} XP to Lv ${t.level + 1}`}</small></div>
+      ${bar(t.cur, t.need, 'tc-bar')}
+    </div>
+    <div class="tc-stats">${stats.map(([icon, n, label, c]) => `
+      <div style="--c:${c}"><span>${ic(icon)}</span><b>${n}</b><small>${label}</small></div>`).join('')}</div>
+    ${team.length ? `<div class="tc-team">${team.map((m) => {
+      const lv = levelInfo(m.xp).level;
+      return `<span class="el-${m.element}" title="${h(m.name)}">${monImg(m)}<small>${lv ? `Lv ${lv}` : 'Egg'}</small></span>`;
+    }).join('')}</div>` : ''}
+    ${me ? `<div class="tc-foot"><span>${ic('medal', 'i-gold')} <b>${ach.filter((a) => a.got).length}</b>/${ach.length} badges</span>
+      <span>${COIN} <b>${fmt(S.me.coins)}</b> coins</span></div>` : ''}
+  </section>`;
 }
 
 // ---------- me ----------
@@ -411,16 +453,9 @@ function dex() {
 }
 
 function meView() {
-  const lg = league(S.me.trophies), ach = achievements();
+  const ach = achievements();
   return `<header class="title"><h1>Profile</h1><div>${S.admin ? `<button class="btn ghost sm" data-a="sheet" data-s="admin">${ic('shield-check')} Admin</button> ` : ''}<button class="btn ghost sm" data-a="sheet" data-s="settings">${ic('gear')} Settings</button></div></header>
-    <section class="card profile">${avatar(S.me, 'xl')}
-      <div><h2>${h(S.me.username)}</h2><p>${lgIc(lg)} ${lg.name} league · ${fmt(S.me.trophies)} ${ic('trophy', 'i-gold')}</p></div></section>
-    <section class="stats">
-      <div><b>${fmt(S.me.total_pages)}</b><small>pages read</small></div>
-      <div><b>${S.me.books_done}</b><small>books finished</small></div>
-      <div><b>${S.me.best_streak}</b><small>best streak</small></div>
-      <div><b>${S.me.wins}</b><small>battles won</small></div>
-    </section>
+    ${trainerCard(S.me)}
     <button class="btn gold wide" data-a="go" data-tab="shop">${ic('shopping-cart')} Shop · ${fmt(S.me.coins)} ${COIN}</button>
     <h3 class="h">Last 12 weeks</h3><section class="card">${heatmap()}</section>
     ${fusionSection()}
@@ -485,18 +520,15 @@ function bookSheet(s) {
 function friendSheet(s) {
   const f = S.people[s.id];
   if (!f) return '';
-  const m = monsterOf(f), i = m && levelInfo(m.xp), lg = league(f.trophies);
+  const m = monsterOf(f), i = m && levelInfo(m.xp);
   const ship = S.ships.find((x) => x.requester === f.id || x.addressee === f.id);
-  return `<section class="friendhead ${m ? 'el-' + m.element : ''}">${m ? monImg(m) : ''}
-      <h2>${h(f.username)}</h2>
-      <p>${m ? `${h(m.name)} · ${i.level ? `Lv ${i.level} ${stageName(m.element, i.stage)}` : 'Egg'}` : ''}</p></section>
-    <section class="stats"><div><b>${f.streak}</b><small>day streak</small></div><div><b>${fmt(f.total_pages)}</b><small>pages</small></div>
-      <div><b>${f.books_done}</b><small>books</small></div><div><b>${lgIc(lg)}</b><small>${lg.name}</small></div></section>
+  const isFriend = S.friends.some((x) => x.id === f.id);
+  return `${trainerCard(f)}
     <p class="hint">This week: <b>${fmt(weekPages(f.id))}</b> pages (you: ${fmt(weekPages(S.me.id))})</p>
     ${s.books?.length ? `<h3 class="h">Reading now</h3>${s.books.map((b) => `<div class="row">${cover(b, 'sm')}<div><b>${h(b.title)}</b><small>${h(b.author)} · ${Math.round(pct(b.current_page, b.total_pages))}%</small></div></div>`).join('')}` : ''}
-    <div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>${ic('sword')} ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
+    ${isFriend ? `<div class="btns"><button class="btn primary" data-a="fight" data-id="${f.id}" ${i?.level && S.me.energy > 0 && levelInfo(active().xp).level && !foughtToday(f.id) ? '' : 'disabled'}>${ic('sword')} ${foughtToday(f.id) ? 'Battled today' : 'Battle'}</button>
       <button class="btn gold" data-a="sheet" data-s="newduel" data-id="${f.id}">${ic('flag-checkered')} Duel</button></div>
-    <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>`;
+    <button class="btn danger wide" data-a="friendRemove" data-id="${ship?.id}" data-confirm="1">${s.confirm ? 'Tap again to remove' : 'Remove friend'}</button>` : ''}`;
 }
 
 function newDuelSheet(s) {
